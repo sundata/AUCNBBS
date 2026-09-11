@@ -1,9 +1,9 @@
 'use client';
 
 import type { ListingStatus } from '@aucn/domain';
-import { canTransition } from '@aucn/domain';
+import { canTransition, isPubliclyVisible } from '@aucn/domain';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useRouter as useLocaleRouter } from '@/i18n/routing';
 import { useState } from 'react';
 import { api, ApiError, type ListingDetail } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
@@ -18,7 +18,7 @@ export function OwnerActions({ listing }: { listing: ListingDetail }) {
   const { me } = useAuth();
   const t = useTranslations('listing');
   const tc = useTranslations('common');
-  const router = useRouter();
+  const router = useLocaleRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!me || me.id !== listing.owner.id) return null;
