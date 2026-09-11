@@ -1,12 +1,19 @@
 # 「澳中生活圈」网站 + App 产品设计与 Devin AI 开发任务书
 
-> 文档版本：v1.0<br>
-> 编写日期：2026-09-02<br>
+> 文档版本：v1.1（v1.0 基础上按参考站实测与首个可运行增量修订）<br>
+> 编写日期：2026-09-02，最后修订：2026-09-02<br>
 > 目标读者：Devin AI、产品经理、UI/UX、前后端工程师、测试、运营与合规人员<br>
 > 项目代号：`AUCN Hub`<br>
 > 暂定中文名：**澳中生活圈**<br>
 > 暂定英文名：**AUCN Hub**<br>
 > 首发市场：澳大利亚（悉尼、墨尔本、布里斯班优先），服务在澳华人及与中国有连接的澳洲用户
+
+### 修订记录
+
+| 版本 | 日期       | 变更                                                                                                                                                                                                                       |
+| ---- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1.0 | 2026-09-02 | 初版产品设计与任务书                                                                                                                                                                                                       |
+| v1.1 | 2026-09-02 | 新增 §0.2 首个可运行增量范围、§0.3 技术取舍决定（ADR 摘要）、§2.4 参考站实测信息架构映射；补充 §5.5.5 生活服务信息、求购（Wanted）意图、求职简历/雇主主页；§10.1 仓库结构改为实际落地结构；新增 §26 实施状态与本地运行说明 |
 
 ---
 
@@ -26,21 +33,53 @@
 
 ### 0.1 当前假设（如无产品负责人回复，按此执行）
 
-| 项目 | 默认决定 |
-|---|---|
-| 产品名称 | 澳中生活圈 / AUCN Hub（上线前做商标与域名检索） |
-| 语言 | 简体中文、英文；数据结构预留繁体中文 |
-| 地区 | NSW、VIC、QLD 首发，其余州可浏览/发布 |
-| Web | 响应式 Web + SEO + PWA 基础能力 |
-| App | React Native + Expo，iOS/Android 双端 |
-| 后端 | TypeScript + NestJS 模块化单体，成熟后再拆服务 |
-| 数据库 | PostgreSQL + PostGIS；Redis；OpenSearch |
-| 云平台 | AWS Australia（Sydney）Region，IaC 管理 |
+| 项目     | 默认决定                                                                 |
+| -------- | ------------------------------------------------------------------------ |
+| 产品名称 | 澳中生活圈 / AUCN Hub（上线前做商标与域名检索）                          |
+| 语言     | 简体中文、英文；数据结构预留繁体中文                                     |
+| 地区     | NSW、VIC、QLD 首发，其余州可浏览/发布                                    |
+| Web      | 响应式 Web + SEO + PWA 基础能力                                          |
+| App      | React Native + Expo，iOS/Android 双端                                    |
+| 后端     | TypeScript + NestJS 模块化单体，成熟后再拆服务                           |
+| 数据库   | PostgreSQL + PostGIS；Redis；OpenSearch                                  |
+| 云平台   | AWS Australia（Sydney）Region，IaC 管理                                  |
 | 用户认证 | 微信、Apple、Google、邮箱验证码、澳洲/国际手机号 OTP；微信为 P0 首发方式 |
-| 支付 | Stripe；App 内数字权益遵循 Apple/Google IAP 规则 |
-| 地图 | Google Maps Platform（用适配层隔离供应商） |
-| 消息 | WebSocket + APNs/FCM + 邮件；短信仅用于高风险验证 |
-| 发布节奏 | 先 PWA/Web 与后台，再双端 App；共用 API 与组件 token |
+| 支付     | Stripe；App 内数字权益遵循 Apple/Google IAP 规则                         |
+| 地图     | Google Maps Platform（用适配层隔离供应商）                               |
+| 消息     | WebSocket + APNs/FCM + 邮件；短信仅用于高风险验证                        |
+| 发布节奏 | 先 PWA/Web 与后台，再双端 App；共用 API 与组件 token                     |
+
+### 0.2 首个可运行增量（Increment 0）范围
+
+v1.0 一次性列出了完整 P0，但没有定义“第一个能跑起来的东西”。为避免生成大量不可运行的样板代码，Increment 0 只交付一条**可端到端点击的垂直切片**，其余 P0 能力以接口/状态机/表结构预留，但不做假按钮：
+
+| 能力     | Increment 0 交付                                                                                                                                | 明确延后                                              |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 账号     | 邮箱验证码登录（dev 环境验证码写日志）、平台 access/refresh token、`/me`                                                                        | 微信/Apple/Google、手机 OTP、MFA、passkey、注销冷静期 |
+| 地区     | 州 → 城市（NSW/VIC/QLD 首发城市 seed），列表按城市过滤                                                                                          | PostGIS 距离排序、suburb 级模糊坐标                   |
+| 社区     | 板块、发帖（讨论/提问）、评论、按板块/最新浏览                                                                                                  | 楼中楼、投票、采纳、版主工具、编辑历史                |
+| 分类信息 | 统一 listing 引擎 + 租房/招聘/二手/生活服务四种 schema、供给（offer）/求购（wanted）两种意图、`draft→active→completed/expired` 状态机、到期时间 | 审核队列、推广购买、图片上传、地图                    |
+| 资讯     | 首页“资讯”栏位读取已发布文章（seed 数据）                                                                                                       | CMS 编辑器、定时发布、修订                            |
+| 搜索     | PostgreSQL 全文 + trigram 统一搜索（资讯/帖子/各类 listing），按类型分组                                                                        | OpenSearch、拼音、同义词、保存搜索                    |
+| 举报     | 任意对象一键举报入库并返回举报编号                                                                                                              | 审核工作台、申诉                                      |
+| 首页     | 门户式首页：快捷任务、资讯、社区热帖、租房、招聘、二手、生活服务栏位                                                                            | 个性化、推广混排                                      |
+| 双语     | zh-CN / en-AU 全量 message key，URL 前缀 `/zh`、`/en`                                                                                           | 用户内容 AI 翻译                                      |
+| 工程     | pnpm monorepo、Prisma 迁移与确定性 seed、Docker Compose、CI（lint/typecheck/test/build）、`.env.example`、ADR                                   | IaC、OpenTelemetry、E2E、App                          |
+
+**Increment 0 验收：** 游客能按城市浏览首页六大栏位与四类分类信息并搜索；登录用户能发帖、评论、发布一条房源/职位/二手/服务并标记完成；过期 listing 不出现在列表和搜索；举报有编号；所有页面中英文无缺失 key；`pnpm lint && pnpm typecheck && pnpm test && pnpm build` 全绿。
+
+### 0.3 技术取舍决定（ADR 摘要）
+
+以下决定在 `docs/adr/` 中有完整记录；未列出的仍按 §10 执行。
+
+| ADR     | 决定                                                                                                                                                        | 理由 / 代价                                                                                               |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| ADR-001 | 模块化单体：NestJS API + Next.js Web，pnpm workspace + Turborepo，共享 `packages/domain`                                                                    | 与 §10.3 一致；Web/App/Admin 只经 API 访问数据                                                            |
+| ADR-002 | ORM 选 **Prisma**（否决 Drizzle）                                                                                                                           | 迁移工具链成熟、schema 即数据字典、生成类型可直接进 DTO 映射；复杂地理/报表 SQL 用 `$queryRaw` 参数化     |
+| ADR-003 | Increment 0 搜索用 **PostgreSQL `tsvector` + `pg_trgm`**，OpenSearch 作为 Phase 1 派生索引通过 `SearchProvider` 接口接入                                    | 首发流量不需要独立搜索集群；接口隔离保证可替换，搜索故障不影响发布                                        |
+| ADR-004 | 身份提供方抽象为 `IdentityProvider`，先落地 `email_otp`；微信/Apple/Google 各自实现，`identities(provider, provider_app_id, provider_subject)` 唯一约束先建 | 满足 §5.1 “微信是可绑定 identity 而非主键”；避免在开放平台审核未完成时做假按钮                            |
+| ADR-005 | 分类信息统一为 `listings` 主表 + `*_details` 明细表 + `intent(offer/wanted)` 字段                                                                           | 参考站“出售/求购”“招聘/求职”“便民/求助”本质是同一引擎的两个方向，统一后搜索、到期、举报、推广逻辑只写一遍 |
+| ADR-006 | 版本策略：Node 22 LTS、TypeScript 5.x、Next 15、NestJS 11、Prisma 6、Tailwind 4、zod 3                                                                      | 全部为实现时的稳定主版本，不追 RC                                                                         |
 
 ---
 
@@ -78,18 +117,18 @@
 
 ### 1.5 成功指标（上线后 12 个月目标）
 
-| 维度 | 指标 | 目标 |
-|---|---|---:|
-| 北极星 | 每周完成有效本地意图的用户数（保存/咨询/报名/申请/导航） | 30,000 |
-| 获客 | 注册转化率 | ≥ 12% |
-| 激活 | 新用户 7 天内完成一次有效意图 | ≥ 35% |
-| 留存 | 消费型用户 D30 | ≥ 22% |
-| 供给 | 有效分类信息 30 日留存量 | ≥ 10,000 |
-| 社区 | 提问 24 小时内获得有效回复比例 | ≥ 70% |
-| 安全 | 高危举报首次响应 | P95 < 30 分钟 |
-| 质量 | 过期/重复信息曝光占比 | < 3% |
-| 商业 | 商户免费到付费转化 | ≥ 5% |
-| 商业 | 第 12 月订阅 MRR | 以财务模型批准目标为准 |
+| 维度   | 指标                                                     |                   目标 |
+| ------ | -------------------------------------------------------- | ---------------------: |
+| 北极星 | 每周完成有效本地意图的用户数（保存/咨询/报名/申请/导航） |                 30,000 |
+| 获客   | 注册转化率                                               |                  ≥ 12% |
+| 激活   | 新用户 7 天内完成一次有效意图                            |                  ≥ 35% |
+| 留存   | 消费型用户 D30                                           |                  ≥ 22% |
+| 供给   | 有效分类信息 30 日留存量                                 |               ≥ 10,000 |
+| 社区   | 提问 24 小时内获得有效回复比例                           |                  ≥ 70% |
+| 安全   | 高危举报首次响应                                         |          P95 < 30 分钟 |
+| 质量   | 过期/重复信息曝光占比                                    |                   < 3% |
+| 商业   | 商户免费到付费转化                                       |                   ≥ 5% |
+| 商业   | 第 12 月订阅 MRR                                         | 以财务模型批准目标为准 |
 
 ---
 
@@ -106,16 +145,16 @@
 
 ### 2.2 必须改进的体验
 
-| 传统门户痛点 | 澳中生活圈方案 |
-|---|---|
-| 首页拥挤、广告与正文难区分 | 卡片分区、个性化但可关闭；广告统一 `推广` 标识 |
-| 内容按板块割裂 | 统一搜索、统一用户/商户身份、跨模块收藏与消息中心 |
-| 帖子缺少结构化字段 | 房源、职位、商品、活动均使用专用 schema 和筛选器 |
-| 信息过期或已成交仍展示 | 自动到期、发布者续期、状态管理、过期降权和批量清理 |
-| 交易双方直接暴露电话/微信 | 默认站内私信；联系方式按发布者授权逐步展示 |
-| 认证与广告容易混淆 | 身份认证、资质核验、商业推广三个独立标记 |
-| 移动端只是缩小网页 | 原生导航、推送、相机上传、地图、深链和离线收藏 |
-| 纯时间排序导致噪音 | 新鲜度、距离、质量、安全、相关性综合排序，可切换最新 |
+| 传统门户痛点               | 澳中生活圈方案                                       |
+| -------------------------- | ---------------------------------------------------- |
+| 首页拥挤、广告与正文难区分 | 卡片分区、个性化但可关闭；广告统一 `推广` 标识       |
+| 内容按板块割裂             | 统一搜索、统一用户/商户身份、跨模块收藏与消息中心    |
+| 帖子缺少结构化字段         | 房源、职位、商品、活动均使用专用 schema 和筛选器     |
+| 信息过期或已成交仍展示     | 自动到期、发布者续期、状态管理、过期降权和批量清理   |
+| 交易双方直接暴露电话/微信  | 默认站内私信；联系方式按发布者授权逐步展示           |
+| 认证与广告容易混淆         | 身份认证、资质核验、商业推广三个独立标记             |
+| 移动端只是缩小网页         | 原生导航、推送、相机上传、地图、深链和离线收藏       |
+| 纯时间排序导致噪音         | 新鲜度、距离、质量、安全、相关性综合排序，可切换最新 |
 
 ### 2.3 澳洲本地化差异
 
@@ -125,6 +164,26 @@
 - 商家认证支持 ABN 查询结果留档，但不得暗示平台为政府背书。
 - 紧急内容固定展示澳洲紧急电话 `000`；非紧急求助按州配置官方入口。
 - 中国节日与澳洲公共假日并列，活动展示举办地时区。
+
+### 2.4 参考站实测信息架构 → 澳中生活圈模块映射
+
+2026-09-02 对参考站门户首页的实测拆解（仅记录结构，不复制文案/素材）：
+
+| 参考站栏位 / 路径                                                           | 观察到的形态                                                                                           | 澳中生活圈对应模块                           | 差异化处理                                                                                        |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 门户 `/index`                                                               | 单页纵向堆叠 6 大栏位：资讯 → 论坛 → 房产 → 招聘 → 中古 → 生活服务，每栏“轮播图 + 两列标题列表 + 更多” | 首页 §5.2                                    | 保留“栏位 + 更多”的可扫读结构；轮播改为卡片；每栏加城市过滤和状态/推广标识                        |
+| 资讯 `/portal`                                                              | 热点资讯 + 点击排名（排名实际混入论坛帖）                                                              | 资讯中心 §5.3                                | 资讯与帖子分栏，排行榜标明内容类型                                                                |
+| 论坛 `/forum`，板块 `/forum/threads/{id}`，热门导读                         | Discuz 风格板块矩阵（旅游代购、婚姻育儿、法务签证、留学生活、情感、户外、兴趣、综合…）                 | 社区 §5.4                                    | 板块按澳洲场景重编：新手报到、留学、移民生活、亲子教育、职场、旅行、美食、兴趣、城市专区          |
+| 春卷 `/follow`                                                              | 关注流（类似动态）                                                                                     | P1：关注 feed                                | 首发不做独立动态，用“关注”+首页最新替代                                                           |
+| 房产 `/house`：出租 / 出售                                                  | 两个并列列表                                                                                           | 租房 §5.5.1                                  | 首发只做出租（整租/合租/转租）；出售需房产代理资质，列 P1 并要求 B2                               |
+| 工作 `/jobio`：招聘信息 / 求职简历 / 优秀企业 / 行业分类                    | 招聘与求职双向，企业有独立主页                                                                         | 招聘 §5.5.2                                  | 招聘 = listing(job, offer)；求职简历 = listing(job, wanted) P1 且默认私有；企业主页由商户模块提供 |
+| 中古 `/goods`：出售信息 / 求购信息                                          | 双向列表                                                                                               | 二手 §5.5.3                                  | 出售 = listing(item, offer)，求购 = listing(item, wanted)，同一表                                 |
+| 生活服务 `/local`：15 个服务类别、便民信息 / 求助求问 / 优质商家 / 优质服务 | 服务分类信息 + 商家推荐位                                                                              | **新增 §5.5.5 生活服务信息** + 商家目录 §5.6 | 个人/商家发布的服务信息走 listing(service)；“优质商家”改为明确标注 `推广` 的商户卡                |
+| 留学 / 旅游 / 签证 / 便民                                                   | 直接跳到某篇专题或某个板块                                                                             | 实用工具 + 专题                              | 用 CMS 专题页承接，避免导航项直接指向单个帖子                                                     |
+| 商城 `mall.*`                                                               | 外部电商                                                                                               | 不做（§1.4）                                 | —                                                                                                 |
+| 右侧悬浮：回顶部 / 反馈 / 收藏 / 发帖 / 全屏                                | 快捷操作                                                                                               | 全局发布按钮 + 收藏 + 反馈                   | 移动端收进底部导航                                                                                |
+| 页脚：电脑经典版 / 触屏版 / iOS / Android                                   | 多端多版本                                                                                             | 一套响应式 Web + 原生 App                    | 不维护多套 Web 版本                                                                               |
+| 广告：横幅、广告位招租、Google AdSense                                      | 广告与内容边界模糊                                                                                     | §9.3                                         | 统一 `推广` 标识、广告主名称、频控                                                                |
 
 ---
 
@@ -179,15 +238,15 @@
 
 ### 4.3 URL 与深链
 
-| 类型 | Web URL | App deep link |
-|---|---|---|
-| 资讯 | `/zh/news/{slug}` | `aucnhub://news/{id}` |
-| 社区 | `/zh/community/{board}/{slug}` | `aucnhub://post/{id}` |
-| 房源 | `/zh/housing/{city}/{slug}` | `aucnhub://listing/housing/{id}` |
-| 职位 | `/zh/jobs/{city}/{slug}` | `aucnhub://listing/job/{id}` |
-| 商品 | `/zh/marketplace/{city}/{slug}` | `aucnhub://listing/item/{id}` |
-| 商家 | `/zh/business/{city}/{slug}` | `aucnhub://business/{id}` |
-| 活动 | `/zh/events/{city}/{slug}` | `aucnhub://event/{id}` |
+| 类型 | Web URL                         | App deep link                    |
+| ---- | ------------------------------- | -------------------------------- |
+| 资讯 | `/zh/news/{slug}`               | `aucnhub://news/{id}`            |
+| 社区 | `/zh/community/{board}/{slug}`  | `aucnhub://post/{id}`            |
+| 房源 | `/zh/housing/{city}/{slug}`     | `aucnhub://listing/housing/{id}` |
+| 职位 | `/zh/jobs/{city}/{slug}`        | `aucnhub://listing/job/{id}`     |
+| 商品 | `/zh/marketplace/{city}/{slug}` | `aucnhub://listing/item/{id}`    |
+| 商家 | `/zh/business/{city}/{slug}`    | `aucnhub://business/{id}`        |
+| 活动 | `/zh/events/{city}/{slug}`      | `aucnhub://event/{id}`           |
 
 Web 使用 canonical URL、hreflang、结构化数据和可索引服务端渲染；私信、个人资料与后台禁止索引。
 
@@ -281,7 +340,8 @@ API     → 校验并原子消费 state → 服务端换取微信身份 → 查�
 
 字段：职位、公司/商户、地点、远程方式、employment type、行业、职责、要求、薪资范围与周期、是否含 super、工作时间、申请截止日、工作权利要求、申请方式。
 
-- 雇主需验证联系方式；批量发布与招聘主页属于商户套餐。
+- 雇主需验证联系方式；批量发布与招聘主页（雇主主页，对应参考站“优秀企业”）属于商户套餐。
+- 行业分类首发：IT/互联网、餐饮、零售、建筑/装修、物流/运输、贸易、教育、医疗/护理、金融/会计、房产、旅游/酒店、美容、法律、其他；使用固定枚举便于筛选与统计。
 - 不允许收取求职保证金或发布明显低于规则阈值的误导薪资；阈值后台可配置且须由运营按官方信息更新。
 - 站内申请只保存必要资料；简历私有且使用短时签名 URL。
 
@@ -293,7 +353,19 @@ API     → 校验并原子消费 state → 服务端换取微信身份 → 查�
 - 提供安全见面地点与不脱离平台沟通提示。
 - P1 支持卖家信誉画像；不承诺平台担保交易。
 
-#### 5.5.4 拼车/出行（P1）
+#### 5.5.4 求购 / 求职 / 求助（Wanted 意图，P0 数据结构，P1 完整体验）
+
+参考站的“求购信息”“求职简历”“求助求问”与对应的供给列表并列展示。本产品把它抽象为 listing 的 `intent` 字段：`offer`（出售/招聘/出租/提供服务）与 `wanted`（求购/求职/求租/求助）。Increment 0 落地字段、筛选与展示；求职简历因涉及个人敏感信息，P1 再开放且默认仅对已验证雇主可见。
+
+#### 5.5.5 生活服务信息（P0）
+
+字段：服务类别（搬家、车务、维修、家政、装修、数码、物流、跨境寄件、庆典、摄影、培训、餐饮外卖、其他）、服务区域（城市/suburb 或上门范围）、价格方式（报价/起步价/时薪/面议）、提供方类型（个人/商户）、可预约时间、资质说明、联系方式策略。
+
+- 个人服务者可发布；带 ABN 的商户发布时自动关联商户页并显示认证标记。
+- 汇款/换汇、医疗、法律等类别按 §1.4 与 §3.3 限制：仅允许 B2 商户发布或直接禁止。
+- 与“求助求问”共用类别，`intent=wanted`。
+
+#### 5.5.6 拼车/出行（P1）
 
 仅做行程信息与费用分摊线索，发布频率、驾驶与保险声明、上下车点隐私、商业载客识别须经法律评估后开放。
 
@@ -457,16 +529,16 @@ Button、IconButton、Input、Select、Combobox、Date/Time、Upload、Chip、Ba
 
 ### 9.1 收入矩阵
 
-| 模式 | 付费方 | 内容 | 首发 |
-|---|---|---|---|
-| 商户 Pro 订阅 | 本地商家 | 多门店、更多图片、线索管理、数据报表、优惠发布 | P0 |
-| 分类信息推广 | 发布者/雇主 | 置顶、加亮、急招、定时刷新 | P0 |
-| 原生广告 | 品牌/商家 | 首页/频道/搜索中的明确标识推广卡 | P0 |
-| 招聘套餐 | 雇主 | 职位额度、公司主页、团队账号、简历收件箱 | P1 |
-| 活动推广/票务服务费 | 主办方 | 推荐位、报名工具、签到、票务 | P1 |
-| 会员 Plus | 用户 | 去除非必要广告、高级提醒、更多收藏分类 | P1 |
-| 合作导购 | 合作伙伴 | 通信、保险等合规产品线索/佣金 | P2 |
-| 市场洞察 | 商户 | 仅聚合、去标识的趋势报告 | P2 |
+| 模式                | 付费方      | 内容                                           | 首发 |
+| ------------------- | ----------- | ---------------------------------------------- | ---- |
+| 商户 Pro 订阅       | 本地商家    | 多门店、更多图片、线索管理、数据报表、优惠发布 | P0   |
+| 分类信息推广        | 发布者/雇主 | 置顶、加亮、急招、定时刷新                     | P0   |
+| 原生广告            | 品牌/商家   | 首页/频道/搜索中的明确标识推广卡               | P0   |
+| 招聘套餐            | 雇主        | 职位额度、公司主页、团队账号、简历收件箱       | P1   |
+| 活动推广/票务服务费 | 主办方      | 推荐位、报名工具、签到、票务                   | P1   |
+| 会员 Plus           | 用户        | 去除非必要广告、高级提醒、更多收藏分类         | P1   |
+| 合作导购            | 合作伙伴    | 通信、保险等合规产品线索/佣金                  | P2   |
+| 市场洞察            | 商户        | 仅聚合、去标识的趋势报告                       | P2   |
 
 不得出售个人信息或私信内容。不得将安全、举报、拉黑、基本发布和账号数据权利放入付费墙。
 
@@ -506,25 +578,23 @@ Button、IconButton、Input、Select、Combobox、Date/Time、Upload、Chip、Ba
 ### 10.1 推荐 monorepo
 
 ```text
-aucnhub/
+AUCNBBS/（仓库根即 monorepo 根）
 ├── apps/
-│   ├── web/                 # Next.js 15+, TypeScript
-│   ├── mobile/              # React Native + Expo
-│   ├── api/                 # NestJS
-│   ├── admin/               # Next.js 独立后台
-│   └── workers/             # 队列、索引、通知、媒体任务
+│   ├── web/                 # Next.js 15 App Router，/zh /en 双语门户   ← Increment 0 已建
+│   ├── api/                 # NestJS 11 模块化单体 + Prisma            ← Increment 0 已建
+│   ├── admin/               # Next.js 独立后台                          ← Phase 2
+│   ├── workers/             # 队列、索引、通知、媒体任务                ← Phase 1
+│   └── mobile/              # React Native + Expo                       ← Phase 3
 ├── packages/
-│   ├── contracts/           # OpenAPI 生成类型、事件 schema
-│   ├── domain/              # 纯领域类型/校验，不引用 UI
-│   ├── ui-web/
-│   ├── ui-mobile/
-│   ├── design-tokens/
-│   ├── i18n/
-│   ├── config/
-│   └── test-utils/
-├── infrastructure/          # Terraform/CDK、Docker、监控
-├── docs/                    # ADR、runbook、API、数据字典
-└── .github/workflows/
+│   ├── domain/              # zod schema、枚举、状态机；不引用 UI/ORM   ← Increment 0 已建
+│   ├── contracts/           # OpenAPI 生成类型、事件 schema             ← Phase 1
+│   ├── design-tokens/       # 颜色/字号/间距 token，Web 与 App 共用     ← Increment 0 以 Tailwind theme 形式内置于 web，Phase 1 抽包
+│   ├── ui-web/ ui-mobile/ i18n/ config/ test-utils/                    ← 按需抽出
+├── infrastructure/
+│   └── docker-compose.yml   # 本地 PostgreSQL                            ← Increment 0 已建
+├── docs/adr/                # ADR-001 ~ ADR-006                          ← Increment 0 已建
+├── .github/workflows/ci.yml                                            ← Increment 0 已建
+└── DEVIN_PRODUCT_DESIGN.md  # 本文件
 ```
 
 版本以实现时稳定 LTS 为准，锁定 exact/合理范围并开启依赖自动更新。不得仅因追新而使用未稳定版本。
@@ -585,13 +655,13 @@ flowchart LR
 
 #### 10.5.1 各存储职责
 
-| 存储 | 是否事实源 | 负责内容 | 明确不负责 |
-|---|---|---|---|
-| PostgreSQL 16+ / RDS Multi-AZ | 是 | 用户、身份绑定、内容元数据、业务状态机、权限、订单、审核、outbox | 原始大文件、全文搜索排名 |
-| PostGIS 扩展 | 是（地理字段） | suburb/区域、模糊/精确坐标分层、距离和范围查询 | 路线导航瓦片 |
-| Redis / ElastiCache | 否 | 限流、短期缓存、authorization transaction、一次性 ticket、WebSocket presence | 永久 session、订单或唯一业务记录 |
-| OpenSearch | 否，可重建 | 中英分词、拼音/同义词、聚合筛选和搜索排序 | 权限事实、库存/订单最终状态 |
-| S3 | 媒体对象源 | 图片、导出文件、私有简历、审核证据；数据库保存 object key 与权限 | 业务关系和权限判断 |
+| 存储                          | 是否事实源     | 负责内容                                                                     | 明确不负责                       |
+| ----------------------------- | -------------- | ---------------------------------------------------------------------------- | -------------------------------- |
+| PostgreSQL 16+ / RDS Multi-AZ | 是             | 用户、身份绑定、内容元数据、业务状态机、权限、订单、审核、outbox             | 原始大文件、全文搜索排名         |
+| PostGIS 扩展                  | 是（地理字段） | suburb/区域、模糊/精确坐标分层、距离和范围查询                               | 路线导航瓦片                     |
+| Redis / ElastiCache           | 否             | 限流、短期缓存、authorization transaction、一次性 ticket、WebSocket presence | 永久 session、订单或唯一业务记录 |
+| OpenSearch                    | 否，可重建     | 中英分词、拼音/同义词、聚合筛选和搜索排序                                    | 权限事实、库存/订单最终状态      |
+| S3                            | 媒体对象源     | 图片、导出文件、私有简历、审核证据；数据库保存 object key 与权限             | 业务关系和权限判断               |
 
 #### 10.5.2 PostgreSQL 拓扑与环境
 
@@ -625,38 +695,38 @@ flowchart LR
 
 所有表默认包含 `id UUID/UUIDv7`、`created_at`、`updated_at`；需要审计的表增加 `version`。时间统一 UTC，显示时按地区转换。删除策略按表定义，不能全局随意 soft delete。
 
-| 实体 | 关键字段 |
-|---|---|
-| users | status, locale, home_region_id, risk_level, last_login_at |
-| identities | user_id, provider, provider_app_id, provider_subject(OpenID), union_subject(UnionID, nullable), scopes, token_ref, verified_at, revoked_at |
-| auth_transactions | state_hash, provider, client_platform, pkce/nonce_hash, expires_at, consumed_at |
-| user_private | user_id, encrypted_phone/email, consent references |
-| sessions | user_id, token_family_hash, device, expires_at, revoked_at |
-| regions | country, state, suburb, postcode, timezone, geom |
-| posts | author_id, board_id, type, title, body_blocks, status, location_visibility |
-| comments | post_id, parent_id, author_id, body, status, depth |
-| articles | author/editor, slug, category, status, publish_at, source, correction_note |
-| listings | owner_id, listing_type, status, title, price_minor, currency, region_id, expires_at |
-| housing_details | listing_id, rent_period, bond_minor, bedrooms, available_from, address_visibility |
-| job_details | listing_id, employer_id, employment_type, salary_min/max, period, super_included |
-| item_details | listing_id, condition, brand, delivery_methods, quantity |
-| businesses | owner_id, abn_hash/reference, verification_status, category, region_id |
-| business_locations | business_id, address, geom, hours_json, contact_policy |
-| professional_credentials | business/user, type, issuer, identifier, expires_at, review_status |
-| events | organiser_id, venue, starts_at, ends_at, timezone, capacity, status |
-| conversations | context_type/id, created_by, state |
-| conversation_members | conversation_id, user_id, last_read_seq, muted_at, blocked_state |
-| messages | conversation_id, sender_id, sequence, body_cipher/ref, moderation_state |
-| reports | reporter_id, subject_type/id, reason, severity, status, evidence_refs |
-| moderation_cases | report_group, assignee, policy_version, decision, appeal_state |
-| plans/products/prices | platform, entitlement, currency, interval, active dates |
-| orders/payments/refunds | customer, amount_minor, provider_ref, status, idempotency_key |
-| subscriptions | customer, provider, external_ref, entitlement_state, period_end |
-| promotions | subject_type/id, placement, targeting, starts/ends, budget, status |
-| notifications | user_id, type, payload_ref, channel, sent/read timestamps |
-| consents | user_id/anonymous_id, purpose, policy_version, granted_at, withdrawn_at |
-| audit_logs | actor, action, subject, before/after refs, reason, trace_id, timestamp |
-| outbox_events | aggregate, event_type, schema_version, payload, published_at |
+| 实体                     | 关键字段                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| users                    | status, locale, home_region_id, risk_level, last_login_at                                                                                  |
+| identities               | user_id, provider, provider_app_id, provider_subject(OpenID), union_subject(UnionID, nullable), scopes, token_ref, verified_at, revoked_at |
+| auth_transactions        | state_hash, provider, client_platform, pkce/nonce_hash, expires_at, consumed_at                                                            |
+| user_private             | user_id, encrypted_phone/email, consent references                                                                                         |
+| sessions                 | user_id, token_family_hash, device, expires_at, revoked_at                                                                                 |
+| regions                  | country, state, suburb, postcode, timezone, geom                                                                                           |
+| posts                    | author_id, board_id, type, title, body_blocks, status, location_visibility                                                                 |
+| comments                 | post_id, parent_id, author_id, body, status, depth                                                                                         |
+| articles                 | author/editor, slug, category, status, publish_at, source, correction_note                                                                 |
+| listings                 | owner_id, listing_type, status, title, price_minor, currency, region_id, expires_at                                                        |
+| housing_details          | listing_id, rent_period, bond_minor, bedrooms, available_from, address_visibility                                                          |
+| job_details              | listing_id, employer_id, employment_type, salary_min/max, period, super_included                                                           |
+| item_details             | listing_id, condition, brand, delivery_methods, quantity                                                                                   |
+| businesses               | owner_id, abn_hash/reference, verification_status, category, region_id                                                                     |
+| business_locations       | business_id, address, geom, hours_json, contact_policy                                                                                     |
+| professional_credentials | business/user, type, issuer, identifier, expires_at, review_status                                                                         |
+| events                   | organiser_id, venue, starts_at, ends_at, timezone, capacity, status                                                                        |
+| conversations            | context_type/id, created_by, state                                                                                                         |
+| conversation_members     | conversation_id, user_id, last_read_seq, muted_at, blocked_state                                                                           |
+| messages                 | conversation_id, sender_id, sequence, body_cipher/ref, moderation_state                                                                    |
+| reports                  | reporter_id, subject_type/id, reason, severity, status, evidence_refs                                                                      |
+| moderation_cases         | report_group, assignee, policy_version, decision, appeal_state                                                                             |
+| plans/products/prices    | platform, entitlement, currency, interval, active dates                                                                                    |
+| orders/payments/refunds  | customer, amount_minor, provider_ref, status, idempotency_key                                                                              |
+| subscriptions            | customer, provider, external_ref, entitlement_state, period_end                                                                            |
+| promotions               | subject_type/id, placement, targeting, starts/ends, budget, status                                                                         |
+| notifications            | user_id, type, payload_ref, channel, sent/read timestamps                                                                                  |
+| consents                 | user_id/anonymous_id, purpose, policy_version, granted_at, withdrawn_at                                                                    |
+| audit_logs               | actor, action, subject, before/after refs, reason, trace_id, timestamp                                                                     |
+| outbox_events            | aggregate, event_type, schema_version, payload, published_at                                                                               |
 
 约束示例：价格不得为负；`expires_at > publish_at`；消息 sequence 在会话内唯一；一个支付 provider event 只能成功处理一次；地理精度按照公开级别生成不同字段，API 不返回隐藏精确坐标。
 
@@ -799,18 +869,18 @@ POST   /api/v1/me/data-export
 
 ## 16. 非功能需求与 SLO
 
-| 项目 | 目标 |
-|---|---|
-| API 可用性 | 月度 ≥ 99.9%（计划维护除外） |
-| 读取延迟 | API P95 < 400ms（不含媒体） |
-| 写入延迟 | API P95 < 700ms |
-| 搜索延迟 | P95 < 800ms |
-| 消息送达 | 在线 P95 < 2s；Push 提交 P95 < 10s |
-| Web 性能 | CWV Good 比例 ≥ 75% |
-| App 稳定性 | crash-free users ≥ 99.8% |
-| 无障碍 | WCAG 2.2 AA；关键流程人工审计 |
-| 容量起点 | 100k MAU、10k DAU、峰值 300 RPS，可水平扩展 |
-| 日志 | 不记录 token、OTP、完整 PII、支付详情 |
+| 项目       | 目标                                        |
+| ---------- | ------------------------------------------- |
+| API 可用性 | 月度 ≥ 99.9%（计划维护除外）                |
+| 读取延迟   | API P95 < 400ms（不含媒体）                 |
+| 写入延迟   | API P95 < 700ms                             |
+| 搜索延迟   | P95 < 800ms                                 |
+| 消息送达   | 在线 P95 < 2s；Push 提交 P95 < 10s          |
+| Web 性能   | CWV Good 比例 ≥ 75%                         |
+| App 稳定性 | crash-free users ≥ 99.8%                    |
+| 无障碍     | WCAG 2.2 AA；关键流程人工审计               |
+| 容量起点   | 100k MAU、10k DAU、峰值 300 RPS，可水平扩展 |
+| 日志       | 不记录 token、OTP、完整 PII、支付详情       |
 
 SLO 必须配套 SLI、告警与 error budget；低流量使用合成监控补足。
 
@@ -1089,3 +1159,40 @@ Devin AI 最终不只交代码，必须交付：
 - 90 天质保期缺陷分级、响应 SLA、技术债清单和后续路线图建议。
 
 **交付判断原则：** 一个真实用户能安全、顺畅地从发现信息到完成咨询；一个商户能付费获客并看见效果；一个运营人员能在不求助开发的情况下配置内容、处理举报和完成退款；系统在故障与滥用场景下仍可控、可审计、可恢复。只有同时做到这些，才算完成“一个网站 + 一个 App”，而不是两套界面原型。
+
+---
+
+## 26. 实施状态与本地运行
+
+### 26.1 当前状态（Increment 0）
+
+| 模块                                                                                                                     | 状态                         | 位置                                                  |
+| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------- | ----------------------------------------------------- |
+| monorepo / CI / Compose / `.env.example`                                                                                 | 完成                         | 根目录、`.github/workflows/ci.yml`、`infrastructure/` |
+| 领域包（枚举、zod schema、listing 状态机、单测）                                                                         | 完成                         | `packages/domain`                                     |
+| Prisma schema + 初始迁移 + 确定性 seed（NSW/VIC/QLD 城市、板块、示例内容）                                               | 完成                         | `apps/api/prisma`                                     |
+| API：邮箱验证码登录、`/me`、地区、板块/帖子/评论、listings（四类型 + intent + 状态机 + 到期）、统一搜索、首页 feed、举报 | 完成                         | `apps/api/src/modules/*`                              |
+| API 横切：Problem Details 错误、cursor 分页、DTO 白名单、限流、helmet、Swagger                                           | 完成                         | `apps/api/src/common`                                 |
+| Web：双语门户首页、社区、租房/招聘/二手/生活服务列表与详情、发布向导、登录、搜索                                         | 完成                         | `apps/web/src/app/[locale]`                           |
+| 微信/Apple/Google 登录、图片上传、私信、审核后台、支付、App                                                              | 未开始（接口与表结构已预留） | —                                                     |
+
+### 26.2 本地运行
+
+```bash
+pnpm install
+cp .env.example .env                      # 按需修改
+docker compose -f infrastructure/docker-compose.yml up -d
+pnpm --filter @aucn/api prisma:migrate    # 建表
+pnpm --filter @aucn/api prisma:seed       # 种子数据
+pnpm dev                                  # api :4000，web :3000
+```
+
+开发环境邮箱验证码不发送邮件，直接打印在 API 日志中（`OTP_DELIVERY=log`）。
+
+### 26.3 下一步（按 §19 Phase 1 顺序）
+
+1. 微信扫码登录（需产品方提供开放平台 AppID；secret 只进 `.env`）。
+2. 图片上传（S3 presigned URL + 服务端重编码）。
+3. 私信与通知。
+4. 举报审核工作台（admin 应用）。
+5. OpenSearch 派生索引替换 `PostgresSearchProvider`。

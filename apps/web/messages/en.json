@@ -1,0 +1,376 @@
+{
+  "site": {
+    "name": "AUCN Hub",
+    "tagline": "News, community and local classifieds for Chinese Australians",
+    "disclaimer": "Content is posted by users or curated by the community. Anything about visas, law, tax, health or finance is general information only, not professional advice. The platform is not a party to any transaction and does not hold funds.",
+    "footer": "© {year} AUCN Hub · Public beta"
+  },
+  "nav": {
+    "home": "Home",
+    "news": "News",
+    "community": "Community",
+    "housing": "Housing",
+    "jobs": "Jobs",
+    "market": "Marketplace",
+    "services": "Services",
+    "search": "Search",
+    "post": "Post",
+    "login": "Log in",
+    "logout": "Log out",
+    "me": "Me",
+    "switchLocale": "中文",
+    "allCities": "All Australia"
+  },
+  "home": {
+    "headlines": "Headlines",
+    "hotPosts": "Trending in community",
+    "housing": "Latest rentals",
+    "jobs": "Latest jobs",
+    "market": "Marketplace picks",
+    "services": "Local services",
+    "more": "More",
+    "cityHint": "Pick a city for local listings",
+    "empty": "Nothing here yet"
+  },
+  "listing": {
+    "type": {
+      "housing": "Housing",
+      "job": "Jobs",
+      "item": "Marketplace",
+      "service": "Services"
+    },
+    "intent": {
+      "offer": "Offer",
+      "wanted": "Wanted"
+    },
+    "intentLabel": {
+      "housing": {
+        "offer": "For rent",
+        "wanted": "Wanted to rent"
+      },
+      "job": {
+        "offer": "Hiring",
+        "wanted": "Seeking work"
+      },
+      "item": {
+        "offer": "For sale",
+        "wanted": "Wanted to buy"
+      },
+      "service": {
+        "offer": "Service offered",
+        "wanted": "Help wanted"
+      }
+    },
+    "status": {
+      "draft": "Draft",
+      "pending_review": "In review",
+      "active": "Active",
+      "reserved": "Reserved",
+      "paused": "Paused",
+      "completed": "Completed",
+      "expired": "Expired",
+      "archived": "Archived",
+      "rejected": "Rejected",
+      "removed": "Removed"
+    },
+    "filterAll": "All",
+    "priceNegotiable": "Price on request",
+    "perWeek": "/wk",
+    "perFortnight": "/fortnight",
+    "perMonth": "/mo",
+    "perHour": "/hr",
+    "perYear": "/yr",
+    "publishedAt": "Posted",
+    "expiresAt": "Expires",
+    "postedBy": "Posted by",
+    "memberSince": "Member since",
+    "views": "views",
+    "details": "Details",
+    "contact": "Contact",
+    "contactInApp": "Contact in-app (messaging coming soon)",
+    "contactPhone": "Phone on request",
+    "contactPublic": "See description for contact details",
+    "report": "Report",
+    "empty": "No listings in this city yet — be the first to post.",
+    "loadMore": "Load more",
+    "markCompleted": "Mark completed",
+    "pause": "Pause",
+    "resume": "Resume",
+    "renew": "Relist",
+    "mine": "My listings",
+    "notFound": "This listing is unavailable",
+    "safetyTip": "Safety: never pay deposits to people you have not met; rental bonds must go through your state's official bond authority.",
+    "perDay": "/day"
+  },
+  "housing": {
+    "kind": {
+      "whole": "Whole property",
+      "share": "Share house",
+      "sublet": "Sublet"
+    },
+    "bedrooms": "{count} bed",
+    "bathrooms": "{count} bath",
+    "parking": "{count} parking",
+    "furnished": "Furnished",
+    "unfurnished": "Unfurnished",
+    "billsIncluded": "Bills included",
+    "petsAllowed": "Pets OK",
+    "bond": "Bond",
+    "availableFrom": "Available from",
+    "minTerm": "Min {weeks} weeks"
+  },
+  "job": {
+    "employmentType": {
+      "full_time": "Full-time",
+      "part_time": "Part-time",
+      "casual": "Casual",
+      "contract": "Contract",
+      "internship": "Internship"
+    },
+    "company": "Company",
+    "salary": "Salary",
+    "superIncluded": "Super included",
+    "remote": "Remote OK",
+    "workRights": "Work rights",
+    "applyDeadline": "Apply by"
+  },
+  "item": {
+    "condition": {
+      "new": "New",
+      "like_new": "Like new",
+      "good": "Good",
+      "fair": "Fair",
+      "for_parts": "For parts"
+    },
+    "negotiable": "Negotiable",
+    "quantity": "Qty",
+    "delivery": {
+      "pickup": "Pickup",
+      "delivery": "Delivery",
+      "post": "Postage"
+    }
+  },
+  "service": {
+    "priceMode": {
+      "quote": "Quote",
+      "from": "from",
+      "hourly": "Hourly",
+      "negotiable": "Negotiable"
+    },
+    "business": "Business",
+    "individual": "Individual",
+    "serviceArea": "Service area",
+    "abn": "ABN"
+  },
+  "community": {
+    "title": "Community",
+    "boards": "Boards",
+    "latest": "Latest",
+    "posts": "{count} posts",
+    "comments": "{count} comments",
+    "anonymous": "Anonymous",
+    "question": "Q",
+    "newPost": "New post",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a reply…",
+    "loginToReply": "Log in to join the discussion",
+    "noComments": "No replies yet — start the conversation.",
+    "notFound": "This post is unavailable"
+  },
+  "news": {
+    "title": "News",
+    "category": {
+      "platform": "Announcements",
+      "housing": "Property",
+      "career": "Careers",
+      "life": "Life",
+      "policy": "Policy",
+      "education": "Education"
+    },
+    "source": "Source",
+    "editorNote": "Community-curated content. Not professional advice."
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search rentals, jobs, marketplace, posts…",
+    "results": "{count} results for “{q}”",
+    "empty": "Nothing found — try another keyword.",
+    "scope": {
+      "all": "All",
+      "listings": "Classifieds",
+      "posts": "Posts",
+      "articles": "News"
+    },
+    "kind": {
+      "listing": "Listing",
+      "post": "Post",
+      "article": "News"
+    }
+  },
+  "auth": {
+    "title": "Log in with email",
+    "subtitle": "We’ll send a 6-digit code. No password needed.",
+    "email": "Email",
+    "code": "Code",
+    "sendCode": "Send code",
+    "resend": "Resend",
+    "verify": "Log in",
+    "sent": "Code sent, valid for {ttl} minutes. In development the code is printed in the API log.",
+    "invalid": "Invalid or expired code",
+    "welcome": "Welcome! You can change your display name under “Me”.",
+    "loggingOut": "Logging out…",
+    "required": "Please log in first"
+  },
+  "post": {
+    "title": "Post a listing",
+    "chooseType": "What would you like to post?",
+    "intent": "I want to",
+    "city": "City",
+    "listingTitle": "Title",
+    "body": "Description",
+    "price": "Price (AUD)",
+    "priceHint": "Leave blank for negotiable / no price",
+    "suburb": "Suburb",
+    "postcode": "Postcode",
+    "submit": "Publish",
+    "submitting": "Publishing…",
+    "success": "Published",
+    "contactPolicy": "Contact",
+    "housingFields": "Property details",
+    "jobFields": "Job details",
+    "itemFields": "Item details",
+    "serviceFields": "Service details",
+    "kind": "Type",
+    "propertyType": "Property type",
+    "rentPeriod": "Rent period",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "parking": "Parking",
+    "companyName": "Company / business",
+    "employmentType": "Employment type",
+    "industry": "Industry",
+    "salaryMin": "Salary min (AUD)",
+    "salaryMax": "Salary max (AUD)",
+    "salaryPeriod": "Salary period",
+    "category": "Category",
+    "condition": "Condition",
+    "brand": "Brand",
+    "deliveryMethods": "Delivery",
+    "priceMode": "Pricing",
+    "serviceArea": "Service area",
+    "isBusiness": "I am a business (ABN required)",
+    "abn": "ABN",
+    "postTitle": "Post title",
+    "board": "Board",
+    "postType": "Post type",
+    "discussion": "Discussion",
+    "question": "Question",
+    "anonymous": "Post anonymously",
+    "validation": "Please check: {fields}",
+    "propertyTypes": {
+      "apartment": "Apartment",
+      "house": "House",
+      "townhouse": "Townhouse",
+      "studio": "Studio",
+      "room": "Room",
+      "other": "Other"
+    },
+    "industries": {
+      "it": "IT / Tech",
+      "hospitality": "Hospitality",
+      "retail": "Retail",
+      "construction": "Construction",
+      "logistics": "Logistics / Warehouse",
+      "trade": "Trades",
+      "education": "Education",
+      "healthcare": "Healthcare",
+      "finance": "Finance / Accounting",
+      "real_estate": "Real estate",
+      "travel": "Travel",
+      "beauty": "Beauty",
+      "legal": "Legal (licensed only)",
+      "other": "Other"
+    },
+    "itemCategories": {
+      "furniture": "Furniture",
+      "electronics": "Electronics",
+      "vehicle": "Vehicles",
+      "appliance": "Appliances",
+      "clothing": "Clothing",
+      "books": "Books",
+      "kids": "Baby & kids",
+      "sports": "Sports & outdoors",
+      "other": "Other"
+    },
+    "serviceCategories": {
+      "moving": "Moving / Transport",
+      "automotive": "Automotive",
+      "repair": "Repairs",
+      "cleaning": "Cleaning",
+      "renovation": "Renovation",
+      "digital": "IT / Digital",
+      "logistics": "Logistics",
+      "shipping": "International shipping",
+      "events": "Events",
+      "photography": "Photography",
+      "tutoring": "Tutoring",
+      "food": "Catering",
+      "other": "Other"
+    },
+    "rentPeriods": {
+      "week": "Per week",
+      "fortnight": "Per fortnight",
+      "month": "Per month"
+    },
+    "salaryPeriods": {
+      "hour": "Per hour",
+      "day": "Per day",
+      "week": "Per week",
+      "year": "Per year"
+    },
+    "contactPolicies": {
+      "in_app": "In-app",
+      "phone_on_request": "Phone on request",
+      "public": "Public in description"
+    }
+  },
+  "report": {
+    "title": "Report",
+    "reason": "Reason",
+    "details": "Details (optional)",
+    "submit": "Submit report",
+    "success": "Report received, reference {reference}. We aim to review within 24 hours.",
+    "reasons": {
+      "scam": "Scam / fraud",
+      "harassment": "Harassment",
+      "hate": "Hate speech",
+      "discrimination": "Discrimination",
+      "sexual": "Sexual content",
+      "violence": "Violence",
+      "self_harm": "Self-harm risk",
+      "minor_risk": "Involves minors",
+      "illegal_goods": "Illegal goods",
+      "privacy": "Privacy violation",
+      "copyright": "Copyright",
+      "spam": "Spam",
+      "misinformation": "Misinformation",
+      "other": "Other"
+    }
+  },
+  "me": {
+    "title": "Me",
+    "displayName": "Display name",
+    "save": "Save",
+    "saved": "Saved",
+    "myListings": "My listings"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "retry": "Retry",
+    "back": "Back",
+    "cancel": "Cancel",
+    "close": "Close",
+    "optional": "optional"
+  }
+}
