@@ -1,0 +1,376 @@
+{
+  "site": {
+    "name": "澳中生活圈",
+    "tagline": "在澳华人的资讯、社区与本地信息平台",
+    "disclaimer": "本站内容由用户发布或社区整理，涉及签证、法律、税务、医疗、金融的内容仅供参考，不构成专业建议。平台不参与任何交易，不托管资金。",
+    "footer": "© {year} 澳中生活圈 · 公测版"
+  },
+  "nav": {
+    "home": "首页",
+    "news": "资讯",
+    "community": "社区",
+    "housing": "租房",
+    "jobs": "招聘",
+    "market": "二手",
+    "services": "生活服务",
+    "search": "搜索",
+    "post": "发布",
+    "login": "登录",
+    "logout": "退出",
+    "me": "我的",
+    "switchLocale": "English",
+    "allCities": "全澳"
+  },
+  "home": {
+    "headlines": "今日头条",
+    "hotPosts": "社区热帖",
+    "housing": "最新房源",
+    "jobs": "最新招聘",
+    "market": "二手好物",
+    "services": "生活服务",
+    "more": "更多",
+    "cityHint": "选择城市查看本地信息",
+    "empty": "暂无内容"
+  },
+  "listing": {
+    "type": {
+      "housing": "租房",
+      "job": "招聘",
+      "item": "二手",
+      "service": "生活服务"
+    },
+    "intent": {
+      "offer": "提供",
+      "wanted": "求"
+    },
+    "intentLabel": {
+      "housing": {
+        "offer": "出租",
+        "wanted": "求租"
+      },
+      "job": {
+        "offer": "招聘",
+        "wanted": "求职"
+      },
+      "item": {
+        "offer": "出售",
+        "wanted": "求购"
+      },
+      "service": {
+        "offer": "提供服务",
+        "wanted": "求助"
+      }
+    },
+    "status": {
+      "draft": "草稿",
+      "pending_review": "审核中",
+      "active": "有效",
+      "reserved": "已预定",
+      "paused": "已暂停",
+      "completed": "已完成",
+      "expired": "已过期",
+      "archived": "已归档",
+      "rejected": "未通过",
+      "removed": "已移除"
+    },
+    "filterAll": "全部",
+    "priceNegotiable": "价格面议",
+    "perWeek": "/周",
+    "perFortnight": "/两周",
+    "perMonth": "/月",
+    "perHour": "/小时",
+    "perYear": "/年",
+    "publishedAt": "发布于",
+    "expiresAt": "有效期至",
+    "postedBy": "发布者",
+    "memberSince": "加入于",
+    "views": "浏览",
+    "details": "详细信息",
+    "contact": "联系方式",
+    "contactInApp": "站内联系（私信功能即将上线）",
+    "contactPhone": "电话按需提供",
+    "contactPublic": "公开联系方式见正文",
+    "report": "举报",
+    "empty": "这个城市还没有相关信息，来发布第一条吧。",
+    "loadMore": "加载更多",
+    "markCompleted": "标记完成",
+    "pause": "暂停",
+    "resume": "恢复",
+    "renew": "重新发布",
+    "mine": "我的发布",
+    "notFound": "信息不存在或已下线",
+    "safetyTip": "安全提示：不要预付定金或转账给未见面的陌生人；租房押金须通过各州官方 bond 系统缴纳。",
+    "perDay": "/天"
+  },
+  "housing": {
+    "kind": {
+      "whole": "整租",
+      "share": "合租",
+      "sublet": "转租"
+    },
+    "bedrooms": "{count}房",
+    "bathrooms": "{count}卫",
+    "parking": "{count}车位",
+    "furnished": "带家具",
+    "unfurnished": "无家具",
+    "billsIncluded": "含水电网",
+    "petsAllowed": "可养宠物",
+    "bond": "押金",
+    "availableFrom": "起租日",
+    "minTerm": "最短租期 {weeks} 周"
+  },
+  "job": {
+    "employmentType": {
+      "full_time": "全职",
+      "part_time": "兼职",
+      "casual": "临时",
+      "contract": "合同",
+      "internship": "实习"
+    },
+    "company": "公司",
+    "salary": "薪资",
+    "superIncluded": "含养老金",
+    "remote": "可远程",
+    "workRights": "工作权利要求",
+    "applyDeadline": "截止日期"
+  },
+  "item": {
+    "condition": {
+      "new": "全新",
+      "like_new": "九成新",
+      "good": "良好",
+      "fair": "一般",
+      "for_parts": "配件"
+    },
+    "negotiable": "可议价",
+    "quantity": "数量",
+    "delivery": {
+      "pickup": "自取",
+      "delivery": "送货",
+      "post": "邮寄"
+    }
+  },
+  "service": {
+    "priceMode": {
+      "quote": "报价",
+      "from": "起",
+      "hourly": "按小时",
+      "negotiable": "面议"
+    },
+    "business": "商家",
+    "individual": "个人",
+    "serviceArea": "服务区域",
+    "abn": "ABN"
+  },
+  "community": {
+    "title": "社区",
+    "boards": "板块",
+    "latest": "最新",
+    "posts": "{count} 帖",
+    "comments": "{count} 评论",
+    "anonymous": "匿名",
+    "question": "问",
+    "newPost": "发帖",
+    "reply": "回复",
+    "replyPlaceholder": "写下你的回复……",
+    "loginToReply": "登录后参与讨论",
+    "noComments": "还没有评论，来说两句。",
+    "notFound": "帖子不存在或已删除"
+  },
+  "news": {
+    "title": "资讯",
+    "category": {
+      "platform": "平台公告",
+      "housing": "房产",
+      "career": "职场",
+      "life": "生活",
+      "policy": "政策",
+      "education": "教育"
+    },
+    "source": "来源",
+    "editorNote": "本文为社区整理内容，不构成专业建议。"
+  },
+  "search": {
+    "title": "搜索",
+    "placeholder": "搜索房源、职位、二手、帖子……",
+    "results": "“{q}” 共 {count} 条结果",
+    "empty": "没有找到相关内容，换个关键词试试。",
+    "scope": {
+      "all": "全部",
+      "listings": "分类信息",
+      "posts": "帖子",
+      "articles": "资讯"
+    },
+    "kind": {
+      "listing": "信息",
+      "post": "帖子",
+      "article": "资讯"
+    }
+  },
+  "auth": {
+    "title": "邮箱登录",
+    "subtitle": "输入邮箱获取 6 位验证码，无需密码。",
+    "email": "邮箱",
+    "code": "验证码",
+    "sendCode": "发送验证码",
+    "resend": "重新发送",
+    "verify": "登录",
+    "sent": "验证码已发送，{ttl} 分钟内有效。开发环境下验证码打印在 API 日志。",
+    "invalid": "验证码错误或已过期",
+    "welcome": "欢迎加入！你可以在“我的”页面修改昵称。",
+    "loggingOut": "正在退出…",
+    "required": "请先登录"
+  },
+  "post": {
+    "title": "发布信息",
+    "chooseType": "选择要发布的信息类型",
+    "intent": "你要",
+    "city": "城市",
+    "listingTitle": "标题",
+    "body": "详细描述",
+    "price": "价格（澳元）",
+    "priceHint": "留空表示面议/无价格",
+    "suburb": "区（Suburb）",
+    "postcode": "邮编",
+    "submit": "发布",
+    "submitting": "发布中…",
+    "success": "发布成功",
+    "contactPolicy": "联系方式",
+    "housingFields": "房源信息",
+    "jobFields": "职位信息",
+    "itemFields": "物品信息",
+    "serviceFields": "服务信息",
+    "kind": "类型",
+    "propertyType": "物业类型",
+    "rentPeriod": "租金周期",
+    "bedrooms": "卧室",
+    "bathrooms": "卫浴",
+    "parking": "车位",
+    "companyName": "公司/店名",
+    "employmentType": "雇佣形式",
+    "industry": "行业",
+    "salaryMin": "薪资下限（澳元）",
+    "salaryMax": "薪资上限（澳元）",
+    "salaryPeriod": "薪资周期",
+    "category": "类别",
+    "condition": "成色",
+    "brand": "品牌",
+    "deliveryMethods": "交付方式",
+    "priceMode": "报价方式",
+    "serviceArea": "服务区域",
+    "isBusiness": "我是商家（需填写 ABN）",
+    "abn": "ABN",
+    "postTitle": "帖子标题",
+    "board": "板块",
+    "postType": "帖子类型",
+    "discussion": "讨论",
+    "question": "提问",
+    "anonymous": "匿名发布",
+    "validation": "请检查表单：{fields}",
+    "propertyTypes": {
+      "apartment": "公寓",
+      "house": "独立屋",
+      "townhouse": "联排",
+      "studio": "Studio",
+      "room": "单间",
+      "other": "其他"
+    },
+    "industries": {
+      "it": "IT / 互联网",
+      "hospitality": "餐饮",
+      "retail": "零售",
+      "construction": "建筑",
+      "logistics": "物流 / 仓储",
+      "trade": "技工",
+      "education": "教育",
+      "healthcare": "医疗护理",
+      "finance": "金融 / 会计",
+      "real_estate": "地产",
+      "travel": "旅游",
+      "beauty": "美容美发",
+      "legal": "法律（需持牌）",
+      "other": "其他"
+    },
+    "itemCategories": {
+      "furniture": "家具家居",
+      "electronics": "电子数码",
+      "vehicle": "车辆",
+      "appliance": "家电",
+      "clothing": "服饰",
+      "books": "书籍教材",
+      "kids": "母婴儿童",
+      "sports": "运动户外",
+      "other": "其他"
+    },
+    "serviceCategories": {
+      "moving": "搬家 / 接送",
+      "automotive": "汽车服务",
+      "repair": "维修",
+      "cleaning": "清洁",
+      "renovation": "装修",
+      "digital": "IT / 数字服务",
+      "logistics": "物流",
+      "shipping": "国际快递",
+      "events": "活动策划",
+      "photography": "摄影",
+      "tutoring": "家教 / 培训",
+      "food": "餐饮到家",
+      "other": "其他"
+    },
+    "rentPeriods": {
+      "week": "每周",
+      "fortnight": "每两周",
+      "month": "每月"
+    },
+    "salaryPeriods": {
+      "hour": "每小时",
+      "day": "每天",
+      "week": "每周",
+      "year": "每年"
+    },
+    "contactPolicies": {
+      "in_app": "站内联系",
+      "phone_on_request": "电话按需提供",
+      "public": "公开在正文"
+    }
+  },
+  "report": {
+    "title": "举报",
+    "reason": "举报原因",
+    "details": "补充说明（可选）",
+    "submit": "提交举报",
+    "success": "已收到举报，编号 {reference}。我们会在 24 小时内处理。",
+    "reasons": {
+      "scam": "诈骗 / 欺诈",
+      "harassment": "骚扰",
+      "hate": "仇恨言论",
+      "discrimination": "歧视",
+      "sexual": "色情内容",
+      "violence": "暴力",
+      "self_harm": "自残风险",
+      "minor_risk": "涉及未成年人",
+      "illegal_goods": "违禁物品",
+      "privacy": "隐私泄露",
+      "copyright": "侵权",
+      "spam": "垃圾广告",
+      "misinformation": "虚假信息",
+      "other": "其他"
+    }
+  },
+  "me": {
+    "title": "我的",
+    "displayName": "昵称",
+    "save": "保存",
+    "saved": "已保存",
+    "myListings": "我的发布"
+  },
+  "common": {
+    "loading": "加载中…",
+    "error": "出错了，请稍后再试。",
+    "retry": "重试",
+    "back": "返回",
+    "cancel": "取消",
+    "close": "关闭",
+    "optional": "可选"
+  }
+}

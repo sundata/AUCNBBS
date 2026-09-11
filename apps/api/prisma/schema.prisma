@@ -1,0 +1,410 @@
+generator client {
+  previewFeatures = []
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Identity ----------
+
+enum UserStatus {
+  active
+  restricted
+  banned
+  deleted
+}
+
+enum Role {
+  member
+  verified_member
+  merchant_staff
+  moderator
+  editor
+  support
+  compliance
+  admin
+  super_admin
+}
+
+model User {
+  id          String     @id @default(uuid()) @db.Uuid
+  displayName String     @map("display_name")
+  status      UserStatus @default(active)
+  role        Role       @default(member)
+  locale      String     @default("zh")
+  bio         String?
+  homeCityId  String?    @map("home_city_id") @db.Uuid
+  homeCity    City?      @relation(fields: [homeCityId], references: [id])
+  riskLevel   Int        @default(0) @map("risk_level")
+  lastLoginAt DateTime?  @map("last_login_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  identities Identity[]
+  sessions   Session[]
+  posts      Post[]
+  comments   Comment[]
+  listings   Listing[]
+  reports    Report[]
+  articles   Article[]
+
+  @@map("users")
+}
+
+model Identity {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String // email_otp | wechat | apple | google | phone_otp
+  providerAppId   String    @default("") @map("provider_app_id")
+  providerSubject String    @map("provider_subject") // email (lowercased) / OpenID / sub
+  unionSubject    String?   @map("union_subject")
+  verifiedAt      DateTime? @map("verified_at")
+  revokedAt       DateTime? @map("revoked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, providerAppId, providerSubject])
+  @@index([userId])
+  @@map("identities")
+}
+
+model OtpChallenge {
+  id         String    @id @default(uuid()) @db.Uuid
+  email      String
+  codeHash   String    @map("code_hash")
+  attempts   Int       @default(0)
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@map("otp_challenges")
+}
+
+model Session {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenFamilyHash String    @unique @map("token_family_hash")
+  userAgent       String?   @map("user_agent")
+  expiresAt       DateTime  @map("expires_at")
+  revokedAt       DateTime? @map("revoked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ---------- Regions ----------
+
+model City {
+  id        String  @id @default(uuid()) @db.Uuid
+  slug      String  @unique
+  state     String // NSW, VIC, ...
+  nameZh    String  @map("name_zh")
+  nameEn    String  @map("name_en")
+  timezone  String
+  isLaunch  Boolean @default(false) @map("is_launch")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  users    User[]
+  posts    Post[]
+  listings Listing[]
+
+  @@map("cities")
+}
+
+// ---------- Community ----------
+
+enum ContentStatus {
+  draft
+  published
+  hidden
+  removed
+}
+
+enum PostType {
+  discussion
+  question
+}
+
+model Board {
+  id            String  @id @default(uuid()) @db.Uuid
+  slug          String  @unique
+  nameZh        String  @map("name_zh")
+  nameEn        String  @map("name_en")
+  descriptionZh String  @default("") @map("description_zh")
+  descriptionEn String  @default("") @map("description_en")
+  sortOrder     Int     @default(0) @map("sort_order")
+  isCityBoard   Boolean @default(false) @map("is_city_board")
+
+  posts Post[]
+
+  @@map("boards")
+}
+
+model Post {
+  id           String        @id @default(uuid()) @db.Uuid
+  boardId      String        @map("board_id") @db.Uuid
+  board        Board         @relation(fields: [boardId], references: [id])
+  authorId     String        @map("author_id") @db.Uuid
+  author       User          @relation(fields: [authorId], references: [id])
+  cityId       String?       @map("city_id") @db.Uuid
+  city         City?         @relation(fields: [cityId], references: [id])
+  type         PostType      @default(discussion)
+  title        String
+  body         String
+  anonymous    Boolean       @default(false)
+  status       ContentStatus @default(published)
+  pinned       Boolean       @default(false)
+  viewCount    Int           @default(0) @map("view_count")
+  commentCount Int           @default(0) @map("comment_count")
+  lastActiveAt DateTime      @default(now()) @map("last_active_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  comments     Comment[]
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
+  @@index([boardId, status, lastActiveAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([searchVector], type: Gin)
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@map("posts")
+}
+
+model Comment {
+  id        String        @id @default(uuid()) @db.Uuid
+  postId    String        @map("post_id") @db.Uuid
+  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  String?       @map("parent_id") @db.Uuid
+  parent    Comment?      @relation("CommentThread", fields: [parentId], references: [id])
+  children  Comment[]     @relation("CommentThread")
+  authorId  String        @map("author_id") @db.Uuid
+  author    User          @relation(fields: [authorId], references: [id])
+  body      String
+  depth     Int           @default(0)
+  status    ContentStatus @default(published)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+// ---------- Content (news) ----------
+
+model Article {
+  id           String                   @id @default(uuid()) @db.Uuid
+  slug         String                   @unique
+  authorId     String                   @map("author_id") @db.Uuid
+  author       User                     @relation(fields: [authorId], references: [id])
+  category     String
+  locale       String                   @default("zh")
+  title        String
+  summary      String
+  body         String
+  coverUrl     String?                  @map("cover_url")
+  source       String?
+  status       ContentStatus            @default(draft)
+  publishedAt  DateTime?                @map("published_at")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @updatedAt @map("updated_at")
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([searchVector], type: Gin)
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@map("articles")
+}
+
+// ---------- Listings ----------
+
+enum ListingType {
+  housing
+  job
+  item
+  service
+}
+
+enum ListingIntent {
+  offer
+  wanted
+}
+
+enum ListingStatus {
+  draft
+  pending_review
+  active
+  reserved
+  paused
+  completed
+  expired
+  archived
+  rejected
+  removed
+}
+
+enum ContactPolicy {
+  in_app
+  phone_on_request
+  public
+}
+
+model Listing {
+  id            String        @id @default(uuid()) @db.Uuid
+  ownerId       String        @map("owner_id") @db.Uuid
+  owner         User          @relation(fields: [ownerId], references: [id])
+  type          ListingType
+  intent        ListingIntent @default(offer)
+  status        ListingStatus @default(draft)
+  title         String
+  body          String
+  cityId        String        @map("city_id") @db.Uuid
+  city          City          @relation(fields: [cityId], references: [id])
+  priceMinor    Int?          @map("price_minor")
+  currency      String        @default("AUD")
+  contactPolicy ContactPolicy @default(in_app) @map("contact_policy")
+  viewCount     Int           @default(0) @map("view_count")
+  publishedAt   DateTime?     @map("published_at")
+  expiresAt     DateTime      @map("expires_at")
+  version       Int           @default(1)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  housing      HousingDetails?
+  job          JobDetails?
+  item         ItemDetails?
+  service      ServiceDetails?
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
+  @@index([type, status, cityId, publishedAt(sort: Desc)])
+  @@index([ownerId, status])
+  @@index([status, expiresAt])
+  @@index([searchVector], type: Gin)
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@map("listings")
+}
+
+model HousingDetails {
+  listingId     String    @id @map("listing_id") @db.Uuid
+  listing       Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  kind          String // whole | share | sublet
+  propertyType  String    @map("property_type")
+  rentPeriod    String    @map("rent_period")
+  bondMinor     Int?      @map("bond_minor")
+  billsIncluded Boolean   @default(false) @map("bills_included")
+  bedrooms      Int
+  bathrooms     Int
+  parking       Int       @default(0)
+  furnished     Boolean   @default(false)
+  availableFrom DateTime? @map("available_from") @db.Date
+  minTermWeeks  Int?      @map("min_term_weeks")
+  petsAllowed   Boolean?  @map("pets_allowed")
+  suburb        String
+  postcode      String?
+
+  @@map("housing_details")
+}
+
+model JobDetails {
+  listingId          String    @id @map("listing_id") @db.Uuid
+  listing            Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  companyName        String    @map("company_name")
+  employmentType     String    @map("employment_type")
+  industry           String
+  salaryMinMinor     Int?      @map("salary_min_minor")
+  salaryMaxMinor     Int?      @map("salary_max_minor")
+  salaryPeriod       String?   @map("salary_period")
+  superIncluded      Boolean?  @map("super_included")
+  remote             Boolean   @default(false)
+  workRightsRequired String?   @map("work_rights_required")
+  applyDeadline      DateTime? @map("apply_deadline") @db.Date
+  suburb             String
+
+  @@map("job_details")
+}
+
+model ItemDetails {
+  listingId       String   @id @map("listing_id") @db.Uuid
+  listing         Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  category        String
+  condition       String
+  brand           String?
+  negotiable      Boolean  @default(false)
+  deliveryMethods String[] @map("delivery_methods")
+  quantity        Int      @default(1)
+  suburb          String
+
+  @@map("item_details")
+}
+
+model ServiceDetails {
+  listingId   String  @id @map("listing_id") @db.Uuid
+  listing     Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  category    String
+  priceMode   String  @map("price_mode")
+  serviceArea String  @map("service_area")
+  isBusiness  Boolean @default(false) @map("is_business")
+  abn         String?
+
+  @@map("service_details")
+}
+
+// ---------- Trust & safety ----------
+
+enum ReportStatus {
+  open
+  triaged
+  actioned
+  dismissed
+}
+
+model Report {
+  id          String       @id @default(uuid()) @db.Uuid
+  reference   String       @unique // human readable e.g. RPT-20260902-ABCD
+  reporterId  String?      @map("reporter_id") @db.Uuid
+  reporter    User?        @relation(fields: [reporterId], references: [id])
+  subjectType String       @map("subject_type")
+  subjectId   String       @map("subject_id") @db.Uuid
+  reason      String
+  details     String?
+  severity    Int          @default(2)
+  status      ReportStatus @default(open)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([status, severity(sort: Desc), createdAt])
+  @@index([subjectType, subjectId])
+  @@map("reports")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @map("actor_id") @db.Uuid
+  action    String
+  subject   String
+  reason    String?
+  metadata  Json?
+  traceId   String?  @map("trace_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([subject, createdAt])
+  @@map("audit_logs")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  aggregate     String
+  eventType     String    @map("event_type")
+  schemaVersion Int       @default(1) @map("schema_version")
+  payload       Json
+  occurredAt    DateTime  @default(now()) @map("occurred_at")
+  publishedAt   DateTime? @map("published_at")
+
+  @@index([publishedAt, occurredAt])
+  @@map("outbox_events")
+}
