@@ -6,7 +6,8 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm --filter @aucn/api exec prisma generate
 RUN pnpm --filter @aucn/domain build && pnpm --filter @aucn/api build && pnpm --filter @aucn/web build
 RUN mkdir -p /app/uploads /app/apps/api/dist /app/apps/web/.next /app/packages/domain/dist \
 	&& chown -R node:node /app/uploads /app/apps/api/dist /app/apps/web/.next /app/packages/domain/dist
