@@ -1,7 +1,7 @@
 # 「澳中生活圈」网站 + App 产品设计与 Devin AI 开发任务书
 
-> 文档版本：v1.1（v1.0 基础上按参考站实测与首个可运行增量修订）<br>
-> 编写日期：2026-09-02，最后修订：2026-09-02<br>
+> 文档版本：v1.2（Increment 0 交付与端到端测试复盘后修订）<br>
+> 编写日期：2026-09-02，最后修订：2026-09-11<br>
 > 目标读者：Devin AI、产品经理、UI/UX、前后端工程师、测试、运营与合规人员<br>
 > 项目代号：`AUCN Hub`<br>
 > 暂定中文名：**澳中生活圈**<br>
@@ -13,6 +13,7 @@
 | 版本 | 日期       | 变更                                                                                                                                                                                                                       |
 | ---- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v1.0 | 2026-09-02 | 初版产品设计与任务书                                                                                                                                                                                                       |
+| v1.2 | 2026-09-11 | Increment 0 合入 main（PR #1）后复盘：§26 改为“已完成 / 未完成 / 待改善”三张清单并附证据；新增 §26.4 Increment 1 范围与验收、§26.5 技术债登记；§0.2 补充交付状态；§17.1 增加 Increment 1 起的最低测试门槛                  |
 | v1.1 | 2026-09-02 | 新增 §0.2 首个可运行增量范围、§0.3 技术取舍决定（ADR 摘要）、§2.4 参考站实测信息架构映射；补充 §5.5.5 生活服务信息、求购（Wanted）意图、求职简历/雇主主页；§10.1 仓库结构改为实际落地结构；新增 §26 实施状态与本地运行说明 |
 
 ---
@@ -50,6 +51,8 @@
 | 发布节奏 | 先 PWA/Web 与后台，再双端 App；共用 API 与组件 token                     |
 
 ### 0.2 首个可运行增量（Increment 0）范围
+
+> **状态（2026-09-11）：已交付并合入 `main`（PR #1，CI 绿，浏览器端到端手测 13 项通过 12 项，唯一缺陷已修复）。** 未完成项、待改善项与下一增量见 §26。
 
 v1.0 一次性列出了完整 P0，但没有定义“第一个能跑起来的东西”。为避免生成大量不可运行的样板代码，Increment 0 只交付一条**可端到端点击的垂直切片**，其余 P0 能力以接口/状态机/表结构预留，但不做假按钮：
 
@@ -898,6 +901,7 @@ SLO 必须配套 SLI、告警与 error budget；低流量使用合成监控补�
 - Accessibility：axe 自动化 + VoiceOver/TalkBack/键盘人工测试。
 - Performance：k6 覆盖首页、搜索、详情、发布、消息、webhook 峰值。
 - Resilience：重复/乱序 webhook、队列重投、搜索不可用、推送不可用、上传中断。
+- **Increment 1 起的最低门槛：** 每个 API 模块至少有一组对真实 PostgreSQL（CI 服务容器）的集成测试；每条 §17.2 主路径至少一条 Playwright 用例；两者在 CI 中阻断合并。Increment 0 只有领域与分页单测（见 §26.3 W-8）。
 
 ### 17.2 必测端到端场景
 
@@ -1162,37 +1166,108 @@ Devin AI 最终不只交代码，必须交付：
 
 ---
 
-## 26. 实施状态与本地运行
+## 26. 实施状态、缺口与改善计划
 
-### 26.1 当前状态（Increment 0）
+> 本节是设计书与代码之间的“对账单”。每次增量合入后更新；条目按 **已完成 / 未完成 / 待改善** 分列，并注明证据或代码位置，避免“文档说有、代码没有”。
 
-| 模块                                                                                                                     | 状态                         | 位置                                                  |
-| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------- | ----------------------------------------------------- |
-| monorepo / CI / Compose / `.env.example`                                                                                 | 完成                         | 根目录、`.github/workflows/ci.yml`、`infrastructure/` |
-| 领域包（枚举、zod schema、listing 状态机、单测）                                                                         | 完成                         | `packages/domain`                                     |
-| Prisma schema + 初始迁移 + 确定性 seed（NSW/VIC/QLD 城市、板块、示例内容）                                               | 完成                         | `apps/api/prisma`                                     |
-| API：邮箱验证码登录、`/me`、地区、板块/帖子/评论、listings（四类型 + intent + 状态机 + 到期）、统一搜索、首页 feed、举报 | 完成                         | `apps/api/src/modules/*`                              |
-| API 横切：Problem Details 错误、cursor 分页、DTO 白名单、限流、helmet、Swagger                                           | 完成                         | `apps/api/src/common`                                 |
-| Web：双语门户首页、社区、租房/招聘/二手/生活服务列表与详情、发布向导、登录、搜索                                         | 完成                         | `apps/web/src/app/[locale]`                           |
-| 微信/Apple/Google 登录、图片上传、私信、审核后台、支付、App                                                              | 未开始（接口与表结构已预留） | —                                                     |
+### 26.1 已完成（Increment 0，PR #1，2026-09-11 合入 main）
 
-### 26.2 本地运行
+| 模块                                                                                                                                                                                                                                 | 位置                                                   | 验证方式                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | --------------------------------------------- |
+| monorepo（pnpm 9 + Turborepo）、CI（format/lint/typecheck/test/build + Postgres 服务）、Compose、`.env.example`、6 份 ADR                                                                                                            | 根目录、`.github/workflows/ci.yml`、`docs/adr/`        | CI 绿                                         |
+| 领域包：枚举、zod schema（listing 四类 discriminated union）、listing 状态机 + 单测                                                                                                                                                  | `packages/domain`                                      | vitest 5 例                                   |
+| Prisma schema、2 个迁移（初始表 + `tsvector`/`pg_trgm` 触发器）、确定性 seed（6 城市、8 板块、文章/帖子/四类 listing、1 条过期 listing）                                                                                             | `apps/api/prisma`                                      | `prisma migrate diff` 无差异；seed 可重复执行 |
+| API：邮箱 OTP → JWT access + 轮换 refresh（均哈希存储）、`/me`、城市、板块/帖子/一级评论、listings（四类型 + intent + 状态机 + 到期）、统一搜索、首页 feed、举报编号                                                                 | `apps/api/src/modules/*`                               | curl 冒烟 + 浏览器 E2E                        |
+| API 横切：Problem Details、cursor 分页（单测 4 例）、DTO 白名单、限流、helmet、Swagger `/docs`                                                                                                                                       | `apps/api/src/common`                                  | —                                             |
+| Web：`/zh` `/en` 双语门户首页、资讯列表/详情、社区板块/帖子/评论回复、四类 listing 列表（供给/求购筛选）+ 详情、搜索、OTP 登录、发布向导（listing + 帖子）、个人页（改名、我的发布）、举报组件、房主状态操作、loading/404/error 状态 | `apps/web/src/app/[locale]`、`apps/web/src/components` | 浏览器 E2E 录屏                               |
+| 环境 blueprint（Node 22、pnpm、依赖安装、`.env` 初始化）                                                                                                                                                                             | Devin 环境设置                                         | 已批准                                        |
+
+**Increment 0 验收对照（§0.2）：** 游客按城市浏览六大栏位与四类信息并搜索 ✅；登录用户发帖、评论、发布并标记完成 ✅（标记完成后跳转到“我的发布”，见 §26.3 W-1）；过期 listing 不出现在列表与搜索 ✅；举报有编号 ✅；中英文 key 一致 ✅；四条质量命令全绿 ✅。
+
+### 26.2 未完成（设计书已定义、代码尚未落地）
+
+按 §19 路线图归类；“预留”指表结构 / 接口 / 枚举已存在但无实现。
+
+| 编号 | 能力（设计书章节）                                     | 现状                                                              | 归属增量  |
+| ---- | ------------------------------------------------------ | ----------------------------------------------------------------- | --------- |
+| N-1  | 微信 / Apple / Google 登录（§5.1、ADR-004）            | `identities` 表与 `IdentityProvider` 抽象已预留，仅 `email_otp`   | Inc 2     |
+| N-2  | 手机 OTP、MFA、passkey、注销冷静期（§5.1）             | 未开始                                                            | Inc 2–3   |
+| N-3  | 验证码真实投递（SMTP / 供应商）                        | 仅 `OTP_DELIVERY=log`；生产环境无法登录                           | **Inc 1** |
+| N-4  | 图片上传与媒体处理（§5.10）                            | listing / 帖子无图片字段与上传端点                                | **Inc 1** |
+| N-5  | 私信与通知（§5.9）                                     | 未开始；联系方式策略 `contactPolicy` 已存但“站内联系”无落点       | **Inc 1** |
+| N-6  | 审核队列、审核工作台、申诉（§5.11、§5.12）             | 举报仅入库；`pending_review` 状态存在但 Inc 0 直接 `draft→active` | **Inc 1** |
+| N-7  | 到期任务调度                                           | `ListingsService.expireStale()` 已实现但无 cron / worker 调用     | **Inc 1** |
+| N-8  | 领域事件与 Outbox 发布、审计日志写入（§12.3、§13.3）   | `outbox_events`、`audit_logs` 表存在，无任何写入方                | **Inc 1** |
+| N-9  | 商家与服务目录、活动（§5.6、§5.7）                     | 生活服务已作为 listing 类型落地；商家主页 / ABN 校验 / 活动未开始 | Inc 2     |
+| N-10 | 楼中楼、投票、采纳、编辑历史、版主工具（§5.4）         | 评论仅一层，无编辑 / 删除                                         | Inc 2     |
+| N-11 | 帖子 / listing 的编辑、草稿保存、删除                  | 只能创建与改状态                                                  | **Inc 1** |
+| N-12 | 用户主页、关注、收藏（§5.2）                           | 未开始                                                            | Inc 2     |
+| N-13 | CMS 编辑器、定时发布、资讯分类页（§5.3）               | 文章只能通过 seed 写入                                            | Inc 2     |
+| N-14 | 付费推广、支付、发票（§9）                             | 未开始                                                            | Inc 3     |
+| N-15 | OpenSearch、拼音 / 同义词、保存搜索（§5.8、ADR-003）   | `SearchProvider` 接口已预留                                       | Inc 3     |
+| N-16 | PostGIS 距离排序、地图（§10.5）                        | 未开始                                                            | Inc 3     |
+| N-17 | 管理后台 `apps/admin`、Workers `apps/workers`（§10.1） | 目录不存在                                                        | Inc 1 起  |
+| N-18 | 移动端 App（§7）                                       | 未开始                                                            | Phase 3   |
+| N-19 | IaC、OpenTelemetry、告警、灾备演练（§16、§18）         | 未开始                                                            | Inc 3     |
+| N-20 | 隐私政策 / 用户协议页面、Cookie 说明（§13.1）          | 仅 footer 免责声明                                                | **Inc 1** |
+
+### 26.3 待改善（已实现但端到端测试或代码复盘发现的问题）
+
+| 编号 | 问题                                                                                                                                      | 影响                                   | 建议方案                                                                                                             | 优先级 |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ |
+| W-1  | Web 令牌存于 `localStorage`，服务端组件（详情页）请求 API 时不带身份，房主看不到自己已完成 / 暂停的 listing；当前以“操作后跳转 `/me`”规避 | 房主体验断裂；refresh token 暴露给 XSS | 改为 httpOnly 会话 cookie（Next Route Handler 代理刷新），服务端组件转发 cookie；这是 Inc 1 前置项                   | P0     |
+| W-2  | 发布表单依赖浏览器原生 `required/minLength`，提示语随浏览器语言，应用内本地化的 zod 错误从未展示                                          | 双语体验不一致                         | 表单加 `noValidate`，用 zod 结果渲染字段级错误                                                                       | P1     |
+| W-3  | 搜索“悉尼”只命中正文含该词的内容；城市名、suburb 未进入索引；中文分词依赖 trigram                                                         | 搜索召回低于用户预期                   | 搜索向量拼入城市中英文名与 suburb；查询同时匹配 city 过滤；Inc 3 再评估 OpenSearch                                   | P1     |
+| W-4  | 详情页 `notFound()` 在流式渲染下 HTTP 状态为 200                                                                                          | SEO / 监控误判                         | 详情页先 `HEAD`/轻量查询再决定 404，或去掉 `loading.tsx` 对该路由的早期 flush                                        | P1     |
+| W-5  | 匿名作者显示名 `'匿名用户'` 写死在 API                                                                                                    | 英文界面出现中文                       | API 返回 `anonymous: true`，显示名由客户端按 locale 渲染                                                             | P1     |
+| W-6  | 移动端顶部搜索框隐藏，无替代入口                                                                                                          | 手机用户无法搜索                       | 移动端加搜索图标跳 `/search`                                                                                         | P1     |
+| W-7  | listing 列表仅有 intent 筛选，无价格 / 房型 / 排序；无“最新 / 最便宜”排序                                                                 | 与参考站及 §5.5 差距                   | 增加 `priceMin/priceMax`（API 已支持）、房型、排序 UI                                                                | P1     |
+| W-8  | 自动化测试薄弱：API 仅分页单测，无对数据库的集成测试；无 Playwright E2E                                                                   | 回归靠人工                             | §17.1 新要求：API 集成测试（testcontainers / CI Postgres）覆盖登录、发布、状态机、可见性；Playwright 覆盖 §17.2 场景 | P0     |
+| W-9  | 限流为进程内存，多实例无效；无 Redis                                                                                                      | 生产防刷失效                           | Inc 1 引入 Redis 存储限流与 OTP 计数                                                                                 | P1     |
+| W-10 | 每页 SEO 元数据仅站点级；无 sitemap、hreflang、结构化数据                                                                                 | §6.3 未达标                            | 详情页 `generateMetadata`、`sitemap.ts`、`alternates.languages`                                                      | P2     |
+| W-11 | 无可访问性审计（§16 WCAG 2.2 AA）                                                                                                         | 合规风险                               | axe 自动检查进 CI，键盘走查发布流程                                                                                  | P2     |
+| W-12 | 联系方式策略 `phone_on_request/public` 无实际字段与脱敏展示                                                                               | 功能名不副实                           | 与 N-5 私信一并设计：电话字段、登录后可见、展示次数限制                                                              | P1     |
+| W-13 | 举报无去重与频率限制（同一人对同一对象可反复举报）                                                                                        | 刷举报                                 | `(reporter, subject)` 24h 内唯一；游客按 IP 哈希限流                                                                 | P1     |
+| W-14 | 设计书 §10.1 仍列出 `apps/mobile`、`apps/admin`、`packages/contracts` 等尚不存在的目录                                                    | 文档与仓库不一致                       | 保留为目标结构，标注“计划中”；实际以 `README.md` 为准                                                                | P2     |
+
+### 26.4 Increment 1 范围与验收（建议下一步）
+
+目标：让平台**可对外小范围公测**——真实登录投递、有图、有私信、有审核、有安全会话。
+
+| 能力       | 交付内容                                                                                                           | 对应编号  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ | --------- |
+| 安全会话   | httpOnly cookie 会话 + 服务端转发；refresh 轮换保留                                                                | W-1       |
+| 验证码投递 | `OtpDelivery` 接口 + SMTP（Nodemailer）实现；生产禁止 `log`                                                        | N-3       |
+| 图片       | S3 兼容 presigned 上传、服务端重编码 / 去 EXIF、listing 最多 8 图、帖子 4 图                                       | N-4       |
+| 私信       | 对 listing / 用户发起会话、未读数、屏蔽；`contactPolicy=in_app` 落地                                               | N-5、W-12 |
+| 审核       | listing 发布进入 `pending_review`（可按用户信誉直通）；`apps/admin` 最小工作台：队列、通过 / 拒绝 / 下架、举报处理 | N-6、N-17 |
+| 后台任务   | `apps/workers`：到期扫描、Outbox 派发、审计日志写入                                                                | N-7、N-8  |
+| 内容管理   | 帖子 / listing 编辑、删除（软删）、草稿                                                                            | N-11      |
+| 合规页面   | 隐私政策、用户协议、社区规范（中英）                                                                               | N-20      |
+| 测试       | API 集成测试 + Playwright E2E 进 CI                                                                                | W-8       |
+| 小改善     | W-2、W-3、W-5、W-6、W-7、W-9、W-13                                                                                 |           |
+
+**Increment 1 验收：** 新用户可通过真实邮件收到验证码登录；发布带图房源进入审核，管理员通过后对游客可见，拒绝后房主收到通知并可编辑重发；游客对房源发起私信须先登录，房主在站内收到并回复；过期 listing 由 worker 自动置为 `expired`；每次状态变更有审计记录；Playwright 覆盖 §17.2 中登录、发布、审核、私信、举报五条主路径且在 CI 运行；`pnpm lint && pnpm typecheck && pnpm test && pnpm build` 全绿。
+
+### 26.5 技术债登记
+
+| 项                                                      | 说明                                                                       | 处理时机     |
+| ------------------------------------------------------- | -------------------------------------------------------------------------- | ------------ |
+| `listing.details` 在 Web 侧为 `Record<string, unknown>` | 各类型明细应从 `packages/domain` 的 zod schema 推导类型并在 API 返回时校验 | Inc 1        |
+| Web DTO 类型手写于 `apps/web/src/lib/api.ts`            | 应从 API 生成（OpenAPI → TS）或迁至 `packages/contracts`                   | Inc 1        |
+| 直接 `draft→active`（ADR-005 临时决定）                 | Inc 1 审核队列上线后撤销，保留信誉直通规则                                 | Inc 1        |
+| `tsconfig.tsbuildinfo` 曾误入库                         | 已加入 `.gitignore`                                                        | 已处理       |
+| seed 中示例用户密码 / 邮箱为占位                        | 仅开发环境；生产禁止执行 seed                                              | 上线检查清单 |
+
+### 26.6 本地运行
 
 ```bash
 pnpm install
 cp .env.example .env                      # 按需修改
 docker compose -f infrastructure/docker-compose.yml up -d
-pnpm --filter @aucn/api prisma:migrate    # 建表
-pnpm --filter @aucn/api prisma:seed       # 种子数据
-pnpm dev                                  # api :4000，web :3000
+pnpm --filter @aucn/api prisma:migrate:deploy
+pnpm --filter @aucn/api prisma:seed       # 种子数据（仅开发环境）
+pnpm dev                                  # api :4000（Swagger /docs），web :3000（/zh、/en）
 ```
 
-开发环境邮箱验证码不发送邮件，直接打印在 API 日志中（`OTP_DELIVERY=log`）。
-
-### 26.3 下一步（按 §19 Phase 1 顺序）
-
-1. 微信扫码登录（需产品方提供开放平台 AppID；secret 只进 `.env`）。
-2. 图片上传（S3 presigned URL + 服务端重编码）。
-3. 私信与通知。
-4. 举报审核工作台（admin 应用）。
-5. OpenSearch 派生索引替换 `PostgresSearchProvider`。
+开发环境邮箱验证码不发送邮件，直接打印在 API 日志中（`OTP_DELIVERY=log`，日志关键字 `DEV OTP`）。
