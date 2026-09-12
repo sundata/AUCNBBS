@@ -43,7 +43,10 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
               placeholder={t('search')}
               className="w-full rounded-l border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-brand"
             />
-            <button type="submit" className="rounded-r bg-brand text-white px-3 text-sm">
+            <button
+              type="submit"
+              className="rounded-r bg-brand text-white px-3 text-sm whitespace-nowrap shrink-0"
+            >
               {t('search')}
             </button>
           </form>
@@ -56,6 +59,10 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
             </Link>
             {loading ? null : me ? (
               <>
+                <Link href="/messages">{t('messages')}</Link>
+                {['editor', 'moderator', 'admin', 'super_admin'].includes(me.role) && (
+                  <Link href="/admin">{t('admin')}</Link>
+                )}
                 <Link href="/me" className="hover:text-brand">
                   {me.displayName}
                 </Link>

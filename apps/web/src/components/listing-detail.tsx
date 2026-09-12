@@ -1,3 +1,5 @@
+import { ContactButton } from './contact-button';
+import { ListingImages } from './listing-images';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import type { AppLocale } from '@/i18n/routing';
@@ -62,6 +64,7 @@ export async function ListingDetailView({ id }: { id: string }) {
           {t('publishedAt')} {formatDate(l.publishedAt, loc)} · {t('expiresAt')}{' '}
           {formatDate(l.expiresAt, loc)} · {l.viewCount} {t('views')}
         </div>
+        <ListingImages listingId={l.id} readOnly />
         <div className="mt-6 whitespace-pre-wrap leading-7">{l.body}</div>
 
         <h2 className="mt-8 mb-2 font-semibold">{t('details')}</h2>
@@ -160,6 +163,7 @@ export async function ListingDetailView({ id }: { id: string }) {
                 ? t('contactPhone')
                 : t('contactPublic')}
           </div>
+          <ContactButton listingId={l.id} ownerId={l.owner.id} />
           <OwnerActions listing={l} />
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">

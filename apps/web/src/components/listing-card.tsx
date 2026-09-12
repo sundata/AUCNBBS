@@ -82,9 +82,10 @@ export function ListingCard({ l, compact = false }: { l: ListingSummary; compact
   return (
     <Link
       href={`/${LISTING_ROUTES[l.type]}/${l.id}`}
-      className={`block rounded border border-gray-100 hover:border-brand/40 hover:shadow-sm bg-white ${compact ? 'p-2' : 'p-3'}`}
+      className={`block rounded border border-gray-100 hover:border-brand/40 hover:shadow-sm ${l.promoted ? 'bg-amber-50 border-amber-300' : 'bg-white'} ${compact ? 'p-2' : 'p-3'}`}
     >
       <div className="flex items-start gap-2">
+        {l.promoted && <span className="text-xs text-amber-800">{t('promoted')}</span>}
         <span
           className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${l.intent === 'wanted' ? 'bg-amber-100 text-amber-800' : 'bg-red-50 text-brand'}`}
         >

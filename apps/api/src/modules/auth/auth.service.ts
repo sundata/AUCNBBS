@@ -1,4 +1,10 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import nodemailer from 'nodemailer';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -50,6 +56,12 @@ export class AuthService {
   }
 
   async requestOtp(rawEmail: string): Promise<{ ttlSeconds: number }> {
+    const delivery = process.env.OTP_DELIVERY ?? 'log';
+    if (
+      !(delivery === 'log' && process.env.NODE_ENV !== 'production') &&
+      !(delivery === 'smtp' && process.env.SMTP_URL && process.env.SMTP_FROM)
+    )
+      throw new ServiceUnavailableException('Email delivery is not configured');
     const email = rawEmail.trim().toLowerCase();
     const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
     await this.prisma.otpChallenge.updateMany({
@@ -63,12 +75,23 @@ export class AuthService {
         expiresAt: new Date(Date.now() + this.otpTtlSeconds * 1000),
       },
     });
-    const delivery = process.env.OTP_DELIVERY ?? 'log';
     if (delivery === 'log' && process.env.NODE_ENV !== 'production') {
       this.logger.log(`[DEV OTP] ${email} -> ${code}`);
     } else {
-      // SMTP / provider delivery is wired in a later increment; do not leak codes in production logs.
-      this.logger.warn(`OTP delivery '${delivery}' not configured; code for ${email} was not sent`);
+      try {
+        await nodemailer.createTransport(process.env.SMTP_URL!).sendMail({
+          from: process.env.SMTP_FROM!,
+          to: email,
+          subject: 'AUCN Hub sign-in code',
+          text: `Your verification code is ${code}. It expires in ${Math.ceil(this.otpTtlSeconds / 60)} minutes.`,
+        });
+      } catch {
+        await this.prisma.otpChallenge.updateMany({
+          where: { email, codeHash: sha256(`${email}:${code}`), consumedAt: null },
+          data: { consumedAt: new Date() },
+        });
+        throw new ServiceUnavailableException('Email delivery failed; please retry');
+      }
     }
     return { ttlSeconds: this.otpTtlSeconds };
   }
@@ -93,43 +116,46 @@ export class AuthService {
       });
       throw new UnauthorizedException('Invalid code');
     }
-    await this.prisma.otpChallenge.update({
-      where: { id: challenge.id },
+    const consumed = await this.prisma.otpChallenge.updateMany({
+      where: {
+        id: challenge.id,
+        consumedAt: null,
+        attempts: { lt: OTP_MAX_ATTEMPTS },
+        expiresAt: { gt: new Date() },
+      },
       data: { consumedAt: new Date() },
     });
+    if (consumed.count !== 1) throw new UnauthorizedException('Code already used or expired');
+    return this.signInIdentity('email_otp', '', email, userAgent);
+  }
 
-    const identity = await this.prisma.identity.findUnique({
-      where: {
-        provider_providerAppId_providerSubject: {
-          provider: 'email_otp',
-          providerAppId: '',
-          providerSubject: email,
-        },
+  async signInIdentity(
+    provider: string,
+    providerAppId: string,
+    providerSubject: string,
+    userAgent?: string,
+  ): Promise<TokenPair & { isNewUser: boolean }> {
+    const where = {
+      provider_providerAppId_providerSubject: { provider, providerAppId, providerSubject },
+    };
+    const existing = await this.prisma.identity.findUnique({ where });
+    const identity = await this.prisma.identity.upsert({
+      where,
+      update: {},
+      create: {
+        provider,
+        providerAppId,
+        providerSubject,
+        verifiedAt: new Date(),
+        user: { create: { displayName: `User ${randomBytes(3).toString('hex')}` } },
       },
       include: { user: true },
     });
-    let userId: string;
-    let role: string;
-    let isNewUser = false;
-    if (identity) {
-      if (identity.user.status === 'banned' || identity.user.status === 'deleted') {
-        throw new UnauthorizedException('Account unavailable');
-      }
-      userId = identity.userId;
-      role = identity.user.role;
-    } else {
-      const user = await this.prisma.user.create({
-        data: {
-          displayName: `用户${randomBytes(3).toString('hex')}`,
-          identities: {
-            create: { provider: 'email_otp', providerSubject: email, verifiedAt: new Date() },
-          },
-        },
-      });
-      userId = user.id;
-      role = user.role;
-      isNewUser = true;
-    }
+    if (identity.revokedAt || identity.user.status !== 'active')
+      throw new UnauthorizedException('Account unavailable');
+    const userId = identity.userId;
+    const role = identity.user.role;
+    const isNewUser = !existing;
     await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
     const tokens = await this.issueTokens(userId, role, userAgent);
     return { ...tokens, isNewUser };
@@ -140,14 +166,20 @@ export class AuthService {
       where: { tokenFamilyHash: sha256(refreshToken) },
       include: { user: true },
     });
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+    if (
+      !session ||
+      session.revokedAt ||
+      session.expiresAt <= new Date() ||
+      session.user.status !== 'active'
+    ) {
       throw new UnauthorizedException('Refresh token invalid');
     }
     // Rotate: revoke old session, issue a new one.
-    await this.prisma.session.update({
-      where: { id: session.id },
+    const revoked = await this.prisma.session.updateMany({
+      where: { id: session.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    if (revoked.count !== 1) throw new UnauthorizedException('Refresh token already used');
     return this.issueTokens(session.userId, session.user.role, session.userAgent ?? undefined);
   }
 
@@ -160,7 +192,19 @@ export class AuthService {
 
   async verifyAccessToken(token: string): Promise<AccessTokenPayload> {
     try {
-      return await this.jwt.verifyAsync<AccessTokenPayload>(token);
+      const payload = await this.jwt.verifyAsync<AccessTokenPayload>(token);
+      const session = await this.prisma.session.findFirst({
+        where: {
+          id: payload.sid,
+          userId: payload.sub,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+          user: { status: 'active' },
+        },
+        include: { user: { select: { role: true } } },
+      });
+      if (!session) throw new UnauthorizedException('Session unavailable');
+      return { ...payload, role: session.user.role };
     } catch {
       throw new UnauthorizedException('Invalid access token');
     }

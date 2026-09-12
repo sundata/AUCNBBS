@@ -4,3 +4,8 @@ dist
 .turbo
 pnpm-lock.yaml
 apps/api/prisma/migrations
+
+.next-e2e
+.expo
+playwright-report
+test-results

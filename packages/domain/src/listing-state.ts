@@ -41,3 +41,14 @@ export function isPubliclyVisible(
 ): boolean {
   return PUBLIC_LISTING_STATUSES.includes(status) && expiresAt.getTime() > now.getTime();
 }
+
+/** Time-based expiry applies only to live or paused listings, never terminal states. */
+export function effectiveListingStatus(
+  status: ListingStatus,
+  expiresAt: Date,
+  now = new Date(),
+): ListingStatus {
+  return (status === 'active' || status === 'reserved' || status === 'paused') && expiresAt <= now
+    ? 'expired'
+    : status;
+}

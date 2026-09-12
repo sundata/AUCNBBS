@@ -9,3 +9,13 @@ coverage
 *.log
 apps/api/generated
 *.tsbuildinfo
+
+uploads/
+playwright-report/
+test-results/
+
+.next-e2e/
+.expo/
+
+.env.production
+uploads-test/

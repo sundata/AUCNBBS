@@ -30,3 +30,9 @@ pnpm dev
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
+
+## 后续增量
+
+新增私信与站内通知、举报审核、CMS、分类信息编辑和图片、Stripe 高亮推广与订单、第三方登录适配器及 Expo 原生 App。
+
+详细交付和未完成的外部验收见 [实施清单](docs/IMPLEMENTATION_STATUS.md)，配置和运行见 [部署说明](docs/DEPLOYMENT.md)。

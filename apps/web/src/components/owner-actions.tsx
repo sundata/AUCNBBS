@@ -1,30 +1,46 @@
 'use client';
 
 import type { ListingStatus } from '@aucn/domain';
-import { canTransition, isPubliclyVisible } from '@aucn/domain';
+import { canTransition, effectiveListingStatus, isPubliclyVisible } from '@aucn/domain';
 import { useTranslations } from 'next-intl';
 import { useRouter as useLocaleRouter } from '@/i18n/routing';
 import { useState } from 'react';
 import { api, ApiError, type ListingDetail } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 
-const ACTIONS: { to: ListingStatus; key: 'markCompleted' | 'pause' | 'resume' | 'renew' }[] = [
+const ACTIONS: {
+  to: ListingStatus;
+  key: 'markCompleted' | 'pause' | 'resume' | 'renew' | 'archive';
+}[] = [
   { to: 'completed', key: 'markCompleted' },
   { to: 'paused', key: 'pause' },
   { to: 'active', key: 'resume' },
+  { to: 'archived', key: 'archive' },
 ];
 
-export function OwnerActions({ listing }: { listing: ListingDetail }) {
+type OwnerActionsProps = {
+  listing: Pick<ListingDetail, 'id' | 'status' | 'expiresAt'> & { owner: { id: string } };
+  onChanged?: (updated: ListingDetail) => void;
+  userId?: string;
+};
+export function OwnerActions(props: OwnerActionsProps) {
+  return props.userId ? <Actions {...props} /> : <ConnectedActions {...props} />;
+}
+function ConnectedActions(props: OwnerActionsProps) {
   const { me } = useAuth();
+  return <Actions {...props} userId={me?.id} />;
+}
+function Actions({ listing, onChanged, userId }: OwnerActionsProps) {
   const t = useTranslations('listing');
   const tc = useTranslations('common');
   const router = useLocaleRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (!me || me.id !== listing.owner.id) return null;
+  if (userId !== listing.owner.id) return null;
 
-  const expired = new Date(listing.expiresAt) <= new Date() || listing.status === 'expired';
-  const actions = ACTIONS.filter((a) => canTransition(listing.status, a.to)).map((a) =>
+  const status = effectiveListingStatus(listing.status, new Date(listing.expiresAt));
+  const expired = status === 'expired';
+  const actions = ACTIONS.filter((a) => canTransition(status, a.to)).map((a) =>
     a.to === 'active' && expired ? { ...a, key: 'renew' as const } : a,
   );
 
@@ -33,11 +49,17 @@ export function OwnerActions({ listing }: { listing: ListingDetail }) {
     setError(null);
     try {
       const token = await getAccessToken();
-      await api(`/listings/${listing.id}/status`, {
+      const updated = await api<ListingDetail>(`/listings/${listing.id}/status`, {
         method: 'POST',
         token,
         body: JSON.stringify({ status: to }),
       });
+      if (onChanged) {
+        onChanged(updated);
+      } else if (!isPubliclyVisible(updated.status, new Date(updated.expiresAt))) {
+        router.push('/me');
+        return;
+      }
       router.refresh();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : tc('error'));
@@ -48,7 +70,7 @@ export function OwnerActions({ listing }: { listing: ListingDetail }) {
 
   return (
     <div className="mt-4 border-t pt-3 space-y-2">
-      <div className="text-xs text-muted">{t(`status.${listing.status}`)}</div>
+      <div className="text-xs text-muted">{t(`status.${status}`)}</div>
       <div className="flex flex-wrap gap-2">
         {actions.map((a) => (
           <button

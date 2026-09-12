@@ -1,0 +1,35 @@
+{
+  "name": "@aucn/mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@aucn/domain": "workspace:*",
+    "expo": "~57.0.22",
+    "expo-image-picker": "~57.0.17",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@types/react": "~19.2.2",
+    "eslint": "^9.25.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.31.0",
+    "vitest": "^3.1.0"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "dev": "expo start",
+    "typecheck": "tsc --noEmit",
+    "build": "expo export --platform ios --platform android",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "private": true
+}

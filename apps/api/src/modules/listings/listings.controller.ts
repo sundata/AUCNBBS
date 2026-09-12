@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Query,
@@ -30,6 +31,7 @@ const listQuerySchema = cursorQuerySchema.extend({
   priceMin: z.coerce.number().int().nonnegative().optional(),
   priceMax: z.coerce.number().int().nonnegative().optional(),
 });
+const editSchema = z.object({ version: z.number().int().positive(), listing: createListingSchema });
 const statusSchema = z.object({ status: z.enum(LISTING_STATUSES) });
 
 @ApiTags('listings')
@@ -71,6 +73,17 @@ export class ListingsController {
     @Body(new ZodPipe(createListingSchema)) body: z.infer<typeof createListingSchema>,
   ): Promise<ListingDetailDto> {
     return this.listings.create(user.sub, body);
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  update(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodPipe(editSchema)) body: z.infer<typeof editSchema>,
+  ): Promise<ListingDetailDto> {
+    return this.listings.update(user.sub, id, body.version, body.listing);
   }
 
   @Post(':id/status')

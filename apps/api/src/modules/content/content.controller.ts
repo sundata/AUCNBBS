@@ -47,7 +47,7 @@ export class ContentController {
             }
           : {}),
       },
-      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: query.limit + 1,
     });
     return toPage(

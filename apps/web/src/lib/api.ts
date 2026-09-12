@@ -16,6 +16,7 @@ export interface ListingSummary {
   title: string;
   priceMinor: number | null;
   currency: string;
+  promoted: boolean;
   city: { id: string; slug: string; nameZh: string; nameEn: string };
   suburb: string | null;
   highlights: Record<string, string | number | boolean | null>;
@@ -24,6 +25,7 @@ export interface ListingSummary {
   createdAt: string;
 }
 export interface ListingDetail extends ListingSummary {
+  version: number;
   body: string;
   contactPolicy: string;
   owner: { id: string; displayName: string; memberSince: string };

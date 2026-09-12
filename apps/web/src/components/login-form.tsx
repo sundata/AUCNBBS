@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { api, ApiError } from '@/lib/api';
+import { AlternateLogin } from './alternate-login';
 import { writeAuth } from '@/lib/auth-client';
 
 interface TokenResponse {
@@ -57,7 +58,7 @@ export function LoginForm() {
         expiresAt: Date.now() + r.expiresIn * 1000,
       });
       const next = sp.get('next');
-      router.push(next && next.startsWith('/') ? next : '/');
+      router.push(next && /^\/(?![\/\\])/.test(next) ? next : '/');
     } catch (e) {
       setError(
         e instanceof ApiError && e.problem.status === 401
@@ -131,6 +132,7 @@ export function LoginForm() {
           </button>
         )}
       </form>
+      <AlternateLogin />
     </div>
   );
 }

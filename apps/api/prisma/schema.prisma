@@ -43,6 +43,13 @@ model User {
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
+  purchases     Conversation[] @relation("Buyer")
+  inquiries     Conversation[] @relation("Seller")
+  messages      Message[]
+  notifications Notification[]
+  media         Media[]
+  payments      Payment[]
+
   identities Identity[]
   sessions   Session[]
   posts      Post[]
@@ -275,6 +282,11 @@ model Listing {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
+  conversations Conversation[]
+  media         Media[]
+  payments      Payment[]
+  promotedUntil DateTime?      @map("promoted_until")
+
   housing      HousingDetails?
   job          JobDetails?
   item         ItemDetails?
@@ -407,4 +419,95 @@ model OutboxEvent {
 
   @@index([publishedAt, occurredAt])
   @@map("outbox_events")
+}
+
+model Conversation {
+  id        String    @id @default(uuid()) @db.Uuid
+  listingId String    @map("listing_id") @db.Uuid
+  listing   Listing   @relation(fields: [listingId], references: [id])
+  buyerId   String    @map("buyer_id") @db.Uuid
+  buyer     User      @relation("Buyer", fields: [buyerId], references: [id])
+  sellerId  String    @map("seller_id") @db.Uuid
+  seller    User      @relation("Seller", fields: [sellerId], references: [id])
+  createdAt DateTime  @default(now()) @map("created_at")
+  messages  Message[]
+
+  @@unique([listingId, buyerId])
+  @@index([sellerId, createdAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @map("conversation_id") @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id") @db.Uuid
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String
+  readAt         DateTime?    @map("read_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  subjectId String    @map("subject_id") @db.Uuid
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model Media {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @map("owner_id") @db.Uuid
+  owner     User     @relation(fields: [ownerId], references: [id])
+  listingId String?  @map("listing_id") @db.Uuid
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  key       String   @unique
+  bytes     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([listingId])
+  @@map("media")
+}
+
+model OAuthAttempt {
+  id        String   @id
+  provider  String
+  verifier  String
+  nonce     String
+  locale    String
+  expiresAt DateTime @map("expires_at")
+
+  @@map("oauth_attempts")
+}
+
+model Payment {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerId     String   @map("owner_id") @db.Uuid
+  owner       User     @relation(fields: [ownerId], references: [id])
+  listingId   String   @map("listing_id") @db.Uuid
+  listing     Listing  @relation(fields: [listingId], references: [id])
+  sessionId   String?  @unique @map("session_id")
+  status      String   @default("pending")
+  amountMinor Int      @map("amount_minor")
+  currency    String   @default("aud")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([ownerId, createdAt])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id        String   @id
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("payment_events")
 }

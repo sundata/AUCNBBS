@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -6,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   canTransition,
+  effectiveListingStatus,
   CreateListingInput,
   DEFAULT_LISTING_TTL_DAYS,
   ListingIntent,
@@ -13,7 +15,7 @@ import {
   ListingType,
   PUBLIC_LISTING_STATUSES,
 } from '@aucn/domain';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { CursorQuery, decodeCursor, Page, toPage } from '../../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -25,6 +27,7 @@ export interface ListingSummaryDto {
   title: string;
   priceMinor: number | null;
   currency: string;
+  promoted: boolean;
   city: { id: string; slug: string; nameZh: string; nameEn: string };
   suburb: string | null;
   highlights: Record<string, string | number | boolean | null>;
@@ -34,6 +37,7 @@ export interface ListingSummaryDto {
 }
 
 export interface ListingDetailDto extends ListingSummaryDto {
+  version: number;
   body: string;
   contactPolicy: string;
   owner: { id: string; displayName: string; memberSince: string };
@@ -99,10 +103,11 @@ export function toListingSummary(row: ListingRow): ListingSummaryDto {
     id: row.id,
     type: row.type,
     intent: row.intent,
-    status: row.status,
+    status: effectiveListingStatus(row.status, row.expiresAt),
     title: row.title,
     priceMinor: row.priceMinor,
     currency: row.currency,
+    promoted: !!row.promotedUntil && row.promotedUntil > new Date(),
     city: row.city,
     suburb: row.housing?.suburb ?? row.job?.suburb ?? row.item?.suburb ?? null,
     highlights: highlights(row),
@@ -115,6 +120,7 @@ export function toListingSummary(row: ListingRow): ListingSummaryDto {
 export function toListingDetail(row: ListingRow): ListingDetailDto {
   return {
     ...toListingSummary(row),
+    version: row.version,
     body: row.body,
     contactPolicy: row.contactPolicy,
     owner: {
@@ -257,6 +263,84 @@ export class ListingsService {
     return toListingDetail(row);
   }
 
+  async update(
+    ownerId: string,
+    id: string,
+    version: number,
+    input: CreateListingInput,
+  ): Promise<ListingDetailDto> {
+    const old = await this.prisma.listing.findUnique({ where: { id } });
+    if (!old) throw new NotFoundException('Listing not found');
+    if (old.ownerId !== ownerId) throw new ForbiddenException('Not the owner');
+    if (['removed', 'archived', 'completed', 'pending_review', 'rejected'].includes(old.status))
+      throw new ForbiddenException('This listing cannot be edited');
+    if (input.type !== old.type)
+      throw new UnprocessableEntityException('Listing type cannot change');
+    if (!(await this.prisma.city.findUnique({ where: { id: input.cityId } })))
+      throw new UnprocessableEntityException('Unknown city');
+    if (input.type === 'service' && input.service.isBusiness && !input.service.abn)
+      throw new UnprocessableEntityException('Business services must provide an ABN');
+    const data: Prisma.ListingUpdateInput = {
+      title: input.title,
+      body: input.body,
+      intent: input.intent,
+      city: { connect: { id: input.cityId } },
+      priceMinor: input.priceMinor ?? null,
+      contactPolicy: input.contactPolicy,
+      version: { increment: 1 },
+    };
+    // Full replacement of detail fields; omitted optional fields clear their previous values.
+    if (input.type === 'housing')
+      data.housing = {
+        update: {
+          ...input.housing,
+          bondMinor: input.housing.bondMinor ?? null,
+          postcode: input.housing.postcode ?? null,
+          minTermWeeks: input.housing.minTermWeeks ?? null,
+          petsAllowed: input.housing.petsAllowed ?? null,
+          availableFrom: input.housing.availableFrom ? new Date(input.housing.availableFrom) : null,
+        },
+      };
+    if (input.type === 'job')
+      data.job = {
+        update: {
+          ...input.job,
+          salaryMinMinor: input.job.salaryMinMinor ?? null,
+          salaryMaxMinor: input.job.salaryMaxMinor ?? null,
+          salaryPeriod: input.job.salaryPeriod ?? null,
+          superIncluded: input.job.superIncluded ?? null,
+          workRightsRequired: input.job.workRightsRequired ?? null,
+          applyDeadline: input.job.applyDeadline ? new Date(input.job.applyDeadline) : null,
+        },
+      };
+    if (input.type === 'item')
+      data.item = { update: { ...input.item, brand: input.item.brand ?? null } };
+    if (input.type === 'service')
+      data.service = { update: { ...input.service, abn: input.service.abn ?? null } };
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const row = await tx.listing.update({
+          where: { id, version, status: old.status },
+          data,
+          include: listingInclude,
+        });
+        await tx.auditLog.create({
+          data: {
+            actorId: ownerId,
+            action: 'listing.update',
+            subject: `listing:${id}`,
+            metadata: { previousVersion: version },
+          },
+        });
+        return toListingDetail(row);
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')
+        throw new ConflictException('Listing changed; refresh and try again');
+      throw error;
+    }
+  }
+
   async changeStatus(ownerId: string, id: string, to: ListingStatus): Promise<ListingDetailDto> {
     const row = await this.prisma.listing.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('Listing not found');
@@ -269,26 +353,36 @@ export class ListingsService {
       'archived',
     ];
     if (!ownerAllowed.includes(to)) throw new ForbiddenException(`Owners cannot set status ${to}`);
-    if (!canTransition(row.status, to)) {
-      throw new UnprocessableEntityException(
-        `Cannot transition listing from ${row.status} to ${to}`,
-      );
+    const now = new Date();
+    const from = effectiveListingStatus(row.status, row.expiresAt, now);
+    if (!canTransition(from, to)) {
+      throw new UnprocessableEntityException(`Cannot transition listing from ${from} to ${to}`);
     }
-    const renew = to === 'active' && (row.status === 'expired' || row.expiresAt <= new Date());
-    const updated = await this.prisma.listing.update({
-      where: { id, version: row.version },
-      data: {
-        status: to,
-        version: { increment: 1 },
-        ...(renew
-          ? {
-              expiresAt: new Date(Date.now() + DEFAULT_LISTING_TTL_DAYS[row.type] * 86_400_000),
-              publishedAt: new Date(),
-            }
-          : {}),
-      },
-      include: listingInclude,
-    });
+    const renew = to === 'active' && from === 'expired';
+    let updated: ListingRow;
+    try {
+      updated = await this.prisma.listing.update({
+        where: { id, version: row.version },
+        data: {
+          status: to,
+          version: { increment: 1 },
+          ...(renew
+            ? {
+                expiresAt: new Date(
+                  now.getTime() + DEFAULT_LISTING_TTL_DAYS[row.type] * 86_400_000,
+                ),
+                publishedAt: now,
+              }
+            : {}),
+        },
+        include: listingInclude,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new ConflictException('Listing changed; refresh and try again');
+      }
+      throw error;
+    }
     return toListingDetail(updated);
   }
 
@@ -296,7 +390,7 @@ export class ListingsService {
   async expireStale(now = new Date()): Promise<number> {
     const res = await this.prisma.listing.updateMany({
       where: { status: { in: ['active', 'reserved', 'paused'] }, expiresAt: { lte: now } },
-      data: { status: 'expired' },
+      data: { status: 'expired', version: { increment: 1 } },
     });
     return res.count;
   }

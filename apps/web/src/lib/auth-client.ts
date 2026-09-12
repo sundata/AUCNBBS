@@ -28,10 +28,22 @@ export function writeAuth(auth: StoredAuth | null): void {
   window.dispatchEvent(new Event('aucn-auth'));
 }
 
+let refreshInFlight: Promise<string | null> | null = null;
+
 export async function getAccessToken(): Promise<string | null> {
   const auth = readAuth();
   if (!auth) return null;
   if (auth.expiresAt - 30_000 > Date.now()) return auth.accessToken;
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = refreshAccessToken(auth);
+  try {
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
+  }
+}
+
+async function refreshAccessToken(auth: StoredAuth): Promise<string | null> {
   try {
     const t = await api<{ accessToken: string; refreshToken: string; expiresIn: number }>(
       '/auth/refresh',

@@ -22,7 +22,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 import { z } from 'zod';
 import { Link, useRouter, type AppLocale } from '@/i18n/routing';
-import { api, ApiError, type BoardDto, type CityDto } from '@/lib/api';
+import { api, ApiError, type BoardDto, type CityDto, type ListingDetail } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { cityName, LISTING_ROUTES } from '@/lib/format';
 
@@ -84,11 +84,13 @@ export function PublishForm({
   boards,
   initialType,
   initialBoard,
+  initialListing,
 }: {
   cities: CityDto[];
   boards: BoardDto[];
   initialType?: string;
   initialBoard?: string;
+  initialListing?: ListingDetail;
 }) {
   const t = useTranslations('post');
   const tl = useTranslations('listing');
@@ -103,45 +105,78 @@ export function PublishForm({
   const router = useRouter();
   const { me, loading } = useAuth();
 
+  const detail = initialListing?.details ?? {};
   const [kind, setKind] = useState<Kind>(
-    KINDS.includes(initialType as Kind) ? (initialType as Kind) : 'housing',
+    initialListing?.type ??
+      (KINDS.includes(initialType as Kind) ? (initialType as Kind) : 'housing'),
   );
-  const [intent, setIntent] = useState<'offer' | 'wanted'>('offer');
-  const [cityId, setCityId] = useState(cities.find((c) => c.isLaunch)?.id ?? cities[0]?.id ?? '');
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [price, setPrice] = useState('');
-  const [suburb, setSuburb] = useState('');
-  const [contactPolicy, setContactPolicy] = useState<(typeof CONTACT_POLICIES)[number]>('in_app');
+  const [intent, setIntent] = useState<'offer' | 'wanted'>(initialListing?.intent ?? 'offer');
+  const [cityId, setCityId] = useState(
+    initialListing?.city.id ?? cities.find((c) => c.isLaunch)?.id ?? cities[0]?.id ?? '',
+  );
+  const [title, setTitle] = useState(initialListing?.title ?? '');
+  const [body, setBody] = useState(initialListing?.body ?? '');
+  const [price, setPrice] = useState(
+    initialListing?.priceMinor == null ? '' : String(initialListing.priceMinor / 100),
+  );
+  const [suburb, setSuburb] = useState(initialListing?.suburb ?? '');
+  const [contactPolicy, setContactPolicy] = useState<(typeof CONTACT_POLICIES)[number]>(
+    (initialListing?.contactPolicy as (typeof CONTACT_POLICIES)[number]) ?? 'in_app',
+  );
   // housing
-  const [hKind, setHKind] = useState<(typeof HOUSING_KINDS)[number]>('share');
-  const [propertyType, setPropertyType] = useState<(typeof PROPERTY_TYPES)[number]>('apartment');
-  const [rentPeriod, setRentPeriod] = useState<(typeof RENT_PERIODS)[number]>('week');
-  const [bedrooms, setBedrooms] = useState('1');
-  const [bathrooms, setBathrooms] = useState('1');
-  const [parking, setParking] = useState('0');
-  const [postcode, setPostcode] = useState('');
-  const [furnished, setFurnished] = useState(false);
-  const [billsIncluded, setBillsIncluded] = useState(false);
+  const [hKind, setHKind] = useState<(typeof HOUSING_KINDS)[number]>(
+    (detail.kind as (typeof HOUSING_KINDS)[number]) ?? 'share',
+  );
+  const [propertyType, setPropertyType] = useState<(typeof PROPERTY_TYPES)[number]>(
+    (detail.propertyType as (typeof PROPERTY_TYPES)[number]) ?? 'apartment',
+  );
+  const [rentPeriod, setRentPeriod] = useState<(typeof RENT_PERIODS)[number]>(
+    (detail.rentPeriod as (typeof RENT_PERIODS)[number]) ?? 'week',
+  );
+  const [bedrooms, setBedrooms] = useState(String(detail.bedrooms ?? '1'));
+  const [bathrooms, setBathrooms] = useState(String(detail.bathrooms ?? '1'));
+  const [parking, setParking] = useState(String(detail.parking ?? '0'));
+  const [postcode, setPostcode] = useState(String(detail.postcode ?? ''));
+  const [furnished, setFurnished] = useState(Boolean(detail.furnished));
+  const [billsIncluded, setBillsIncluded] = useState(Boolean(detail.billsIncluded));
   // job
-  const [companyName, setCompanyName] = useState('');
-  const [employmentType, setEmploymentType] =
-    useState<(typeof EMPLOYMENT_TYPES)[number]>('full_time');
-  const [industry, setIndustry] = useState<(typeof JOB_INDUSTRIES)[number]>('hospitality');
-  const [salaryMin, setSalaryMin] = useState('');
-  const [salaryMax, setSalaryMax] = useState('');
-  const [salaryPeriod, setSalaryPeriod] = useState<(typeof SALARY_PERIODS)[number]>('hour');
+  const [companyName, setCompanyName] = useState(String(detail.companyName ?? ''));
+  const [employmentType, setEmploymentType] = useState<(typeof EMPLOYMENT_TYPES)[number]>(
+    (detail.employmentType as (typeof EMPLOYMENT_TYPES)[number]) ?? 'full_time',
+  );
+  const [industry, setIndustry] = useState<(typeof JOB_INDUSTRIES)[number]>(
+    (detail.industry as (typeof JOB_INDUSTRIES)[number]) ?? 'hospitality',
+  );
+  const [salaryMin, setSalaryMin] = useState(
+    detail.salaryMinMinor == null ? '' : String(Number(detail.salaryMinMinor) / 100),
+  );
+  const [salaryMax, setSalaryMax] = useState(
+    detail.salaryMaxMinor == null ? '' : String(Number(detail.salaryMaxMinor) / 100),
+  );
+  const [salaryPeriod, setSalaryPeriod] = useState<(typeof SALARY_PERIODS)[number]>(
+    (detail.salaryPeriod as (typeof SALARY_PERIODS)[number]) ?? 'hour',
+  );
   // item
-  const [category, setCategory] = useState<(typeof ITEM_CATEGORIES)[number]>('furniture');
-  const [condition, setCondition] = useState<(typeof ITEM_CONDITIONS)[number]>('good');
-  const [brand, setBrand] = useState('');
-  const [delivery, setDelivery] = useState<(typeof DELIVERY_METHODS)[number][]>(['pickup']);
+  const [category, setCategory] = useState<(typeof ITEM_CATEGORIES)[number]>(
+    (detail.category as (typeof ITEM_CATEGORIES)[number]) ?? 'furniture',
+  );
+  const [condition, setCondition] = useState<(typeof ITEM_CONDITIONS)[number]>(
+    (detail.condition as (typeof ITEM_CONDITIONS)[number]) ?? 'good',
+  );
+  const [brand, setBrand] = useState(String(detail.brand ?? ''));
+  const [delivery, setDelivery] = useState<(typeof DELIVERY_METHODS)[number][]>(
+    (detail.deliveryMethods as (typeof DELIVERY_METHODS)[number][]) ?? ['pickup'],
+  );
   // service
-  const [sCategory, setSCategory] = useState<(typeof SERVICE_CATEGORIES)[number]>('moving');
-  const [priceMode, setPriceMode] = useState<(typeof PRICE_MODES)[number]>('quote');
-  const [serviceArea, setServiceArea] = useState('');
-  const [isBusiness, setIsBusiness] = useState(false);
-  const [abn, setAbn] = useState('');
+  const [sCategory, setSCategory] = useState<(typeof SERVICE_CATEGORIES)[number]>(
+    (detail.category as (typeof SERVICE_CATEGORIES)[number]) ?? 'moving',
+  );
+  const [priceMode, setPriceMode] = useState<(typeof PRICE_MODES)[number]>(
+    (detail.priceMode as (typeof PRICE_MODES)[number]) ?? 'quote',
+  );
+  const [serviceArea, setServiceArea] = useState(String(detail.serviceArea ?? ''));
+  const [isBusiness, setIsBusiness] = useState(Boolean(detail.isBusiness));
+  const [abn, setAbn] = useState(String(detail.abn ?? ''));
   // post
   const [boardSlug, setBoardSlug] = useState(
     boards.find((b) => b.slug === initialBoard)?.slug ?? boards[0]?.slug ?? '',
@@ -181,6 +216,16 @@ export function PublishForm({
         return {
           ...base,
           housing: {
+            ...Object.fromEntries(
+              Object.entries(detail)
+                .filter(([, value]) => value !== null)
+                .map(([key, value]) => [
+                  key,
+                  (key === 'availableFrom' || key === 'applyDeadline') && typeof value === 'string'
+                    ? value.slice(0, 10)
+                    : value,
+                ]),
+            ),
             kind: hKind,
             propertyType,
             rentPeriod,
@@ -197,13 +242,23 @@ export function PublishForm({
         return {
           ...base,
           job: {
+            ...Object.fromEntries(
+              Object.entries(detail)
+                .filter(([, value]) => value !== null)
+                .map(([key, value]) => [
+                  key,
+                  (key === 'availableFrom' || key === 'applyDeadline') && typeof value === 'string'
+                    ? value.slice(0, 10)
+                    : value,
+                ]),
+            ),
             companyName,
             employmentType,
             industry,
             salaryMinMinor: toMinor(salaryMin),
             salaryMaxMinor: toMinor(salaryMax),
             salaryPeriod,
-            remote: false,
+            remote: Boolean(detail.remote),
             suburb,
           },
         };
@@ -211,12 +266,22 @@ export function PublishForm({
         return {
           ...base,
           item: {
+            ...Object.fromEntries(
+              Object.entries(detail)
+                .filter(([, value]) => value !== null)
+                .map(([key, value]) => [
+                  key,
+                  (key === 'availableFrom' || key === 'applyDeadline') && typeof value === 'string'
+                    ? value.slice(0, 10)
+                    : value,
+                ]),
+            ),
             category,
             condition,
             brand: brand || undefined,
-            negotiable: false,
+            negotiable: Boolean(detail.negotiable),
             deliveryMethods: delivery,
-            quantity: 1,
+            quantity: Number(detail.quantity ?? 1),
             suburb,
           },
         };
@@ -224,6 +289,16 @@ export function PublishForm({
         return {
           ...base,
           service: {
+            ...Object.fromEntries(
+              Object.entries(detail)
+                .filter(([, value]) => value !== null)
+                .map(([key, value]) => [
+                  key,
+                  (key === 'availableFrom' || key === 'applyDeadline') && typeof value === 'string'
+                    ? value.slice(0, 10)
+                    : value,
+                ]),
+            ),
             category: sCategory,
             priceMode,
             serviceArea,
@@ -257,12 +332,19 @@ export function PublishForm({
         });
         router.push(`/community/posts/${r.id}`);
       } else {
-        const r = await api<{ id: string }>('/listings', {
-          method: 'POST',
-          token,
-          body: JSON.stringify(parsed.data),
-        });
-        router.push(`/${LISTING_ROUTES[kind]}/${r.id}`);
+        const r = await api<{ id: string }>(
+          initialListing ? `/listings/${initialListing.id}` : '/listings',
+          {
+            method: initialListing ? 'PATCH' : 'POST',
+            token,
+            body: JSON.stringify(
+              initialListing
+                ? { version: initialListing.version, listing: parsed.data }
+                : parsed.data,
+            ),
+          },
+        );
+        router.push(initialListing ? '/me' : `/${LISTING_ROUTES[kind]}/${r.id}`);
       }
     } catch (e) {
       if (e instanceof ApiError) {
@@ -276,7 +358,7 @@ export function PublishForm({
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-      <h1 className="text-xl font-bold">{t('title')}</h1>
+      <h1 className="text-xl font-bold">{initialListing ? tl('edit') : t('title')}</h1>
       <div>
         <div className="text-sm text-muted mb-1">{t('chooseType')}</div>
         <div className="flex flex-wrap gap-2">
@@ -284,6 +366,7 @@ export function PublishForm({
             <button
               key={k}
               type="button"
+              disabled={!!initialListing}
               onClick={() => setKind(k)}
               className={`px-3 py-1 rounded-full border text-sm ${kind === k ? 'bg-brand text-white border-brand' : 'border-gray-300'}`}
             >
@@ -676,7 +759,7 @@ export function PublishForm({
           disabled={busy}
           className="rounded bg-brand text-white px-5 py-2 text-sm font-medium disabled:opacity-50"
         >
-          {busy ? t('submitting') : t('submit')}
+          {busy ? t('submitting') : initialListing ? tl('saveEdit') : t('submit')}
         </button>
       </form>
     </div>

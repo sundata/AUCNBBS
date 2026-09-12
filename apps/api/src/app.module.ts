@@ -1,3 +1,7 @@
+import { BillingModule } from './modules/billing/billing.module';
+import { MediaModule } from './modules/media/media.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -32,6 +36,10 @@ import { UsersModule } from './modules/users/users.module';
     SearchModule,
     FeedModule,
     ReportsModule,
+    MessagingModule,
+    AdminModule,
+    MediaModule,
+    BillingModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aucn
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: aucnhub
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U aucn -d aucnhub']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  api:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+      target: api
+      args:
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:?Set API_PUBLIC_URL}
+    env_file: ../.env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://aucn:${POSTGRES_PASSWORD}@postgres:5432/aucnhub?schema=public
+      MEDIA_LOCAL_DIR: /app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - images:/app/uploads
+    ports: ['127.0.0.1:4000:4000']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'fetch("http://localhost:4000/api/v1/health").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  web:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+      target: web
+      args:
+        NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:?Set API_PUBLIC_URL}
+    environment:
+      API_INTERNAL_URL: http://api:4000
+      NODE_ENV: production
+    depends_on:
+      api:
+        condition: service_healthy
+    ports: ['127.0.0.1:3000:3000']
+    restart: unless-stopped
+volumes:
+  database:
+  images:
