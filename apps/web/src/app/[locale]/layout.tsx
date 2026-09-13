@@ -46,10 +46,12 @@ export default async function LocaleLayout({
   }
   return (
     <html lang={locale === 'zh' ? 'zh-CN' : 'en-AU'}>
-      <body className="min-h-screen flex flex-col">
+      <body className="min-h-screen flex flex-col bg-surface">
         <NextIntlClientProvider>
           <SiteHeader cities={cities} />
-          <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-6">{children}</main>
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
+            {children}
+          </main>
           <SiteFooter />
         </NextIntlClientProvider>
       </body>

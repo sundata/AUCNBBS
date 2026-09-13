@@ -25,11 +25,15 @@ export default async function HomePage({
   const citySuffix = city ? qs({ city: city.slug }) : '';
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold">{city ? cityName(city, loc) : t('cityHint')}</h1>
+    <div className="space-y-5 sm:space-y-6">
+      <div className="relative overflow-hidden rounded-3xl bg-navy px-5 py-7 sm:px-8 sm:py-9 text-white shadow-[0_14px_36px_rgba(18,48,74,0.18)]">
+        <div className="relative max-w-2xl">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/60 mb-2">AUCN Hub</p>
+          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">{city ? cityName(city, loc) : t('cityHint')}</h1>
+          <p className="mt-2 text-sm sm:text-base text-white/75">{t('tagline')}</p>
+        </div>
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Section title={t('headlines')} href="/news" more={t('more')}>
             {feed.headlines.length === 0 ? (

@@ -13,9 +13,9 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-4">
+    <section className="bg-paper rounded-2xl border border-line/80 p-4 sm:p-5 shadow-[0_8px_24px_rgba(18,48,74,0.05)]">
       <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-base font-semibold border-l-4 border-brand pl-2">{title}</h2>
+        <h2 className="text-base font-semibold text-navy border-l-4 border-brand pl-2">{title}</h2>
         {href && more && (
           <Link href={href} className="text-xs text-muted hover:text-brand">
             {more} ›

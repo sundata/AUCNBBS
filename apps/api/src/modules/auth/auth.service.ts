@@ -9,6 +9,39 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
+async function sendResendEmail({
+  apiKey,
+  from,
+  to,
+  subject,
+  text,
+}: {
+  apiKey: string;
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+}): Promise<void> {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject,
+      text,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Resend API rejected the email: ${response.status} ${detail}`);
+  }
+}
+
 export interface AccessTokenPayload {
   sub: string;
   role: string;
@@ -79,18 +112,50 @@ export class AuthService {
       this.logger.log(`[DEV OTP] ${email} -> ${code}`);
     } else {
       try {
-        await nodemailer.createTransport(process.env.SMTP_URL!).sendMail({
-          from: process.env.SMTP_FROM!,
+        const messageText = `Your verification code is ${code}. It expires in ${Math.ceil(this.otpTtlSeconds / 60)} minutes.`;
+        const smtpFrom = process.env.SMTP_FROM!;
+        const smtpUrl = process.env.SMTP_URL!;
+
+        await nodemailer.createTransport(smtpUrl).sendMail({
+          from: smtpFrom,
           to: email,
           subject: 'AUCN Hub sign-in code',
-          text: `Your verification code is ${code}. It expires in ${Math.ceil(this.otpTtlSeconds / 60)} minutes.`,
+          text: messageText,
         });
-      } catch {
-        await this.prisma.otpChallenge.updateMany({
-          where: { email, codeHash: sha256(`${email}:${code}`), consumedAt: null },
-          data: { consumedAt: new Date() },
-        });
-        throw new ServiceUnavailableException('Email delivery failed; please retry');
+      } catch (smtpError) {
+        const resendApiKey = process.env.RESEND_API_KEY;
+        const resendFrom = process.env.SMTP_FROM;
+        const resendRecipient = email;
+
+        if (resendApiKey && resendFrom && resendRecipient) {
+          try {
+            await sendResendEmail({
+              apiKey: resendApiKey,
+              from: resendFrom,
+              to: resendRecipient,
+              subject: 'AUCN Hub sign-in code',
+              text: `Your verification code is ${code}. It expires in ${Math.ceil(this.otpTtlSeconds / 60)} minutes.`,
+            });
+          } catch (resendError) {
+            this.logger.error('SMTP failed and Resend fallback failed', {
+              smtpError,
+              resendError,
+              email,
+            });
+            await this.prisma.otpChallenge.updateMany({
+              where: { email, codeHash: sha256(`${email}:${code}`), consumedAt: null },
+              data: { consumedAt: new Date() },
+            });
+            throw new ServiceUnavailableException('Email delivery failed; please retry');
+          }
+        } else {
+          this.logger.error('SMTP delivery failed', { smtpError, email });
+          await this.prisma.otpChallenge.updateMany({
+            where: { email, codeHash: sha256(`${email}:${code}`), consumedAt: null },
+            data: { consumedAt: new Date() },
+          });
+          throw new ServiceUnavailableException('Email delivery failed; please retry');
+        }
       }
     }
     return { ttlSeconds: this.otpTtlSeconds };

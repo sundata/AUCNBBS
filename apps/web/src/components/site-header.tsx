@@ -29,59 +29,57 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
   const query = search.toString();
 
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center gap-4 h-14">
-          <Link href="/" className="text-xl font-bold text-brand whitespace-nowrap">
+    <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b border-line shadow-[0_1px_0_rgba(18,48,74,0.04)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center gap-3 py-3 sm:h-[4.5rem] sm:flex-nowrap sm:py-0">
+          <Link href="/" className="shrink-0 text-xl sm:text-2xl font-semibold tracking-tight text-navy whitespace-nowrap">
             {locale === 'zh' ? '澳中生活圈' : 'AUCN Hub'}
           </Link>
-          <CitySelect cities={cities} />
-          <form action={`/${locale}/search`} className="flex-1 hidden md:flex">
+          <div className="hidden sm:block shrink-0"><CitySelect cities={cities} /></div>
+          <form action={`/${locale}/search`} className="order-3 flex w-full sm:order-none sm:flex-1 sm:min-w-40">
             <input
               name="q"
               type="search"
               placeholder={t('search')}
-              className="w-full rounded-l border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-brand"
+              className="w-full rounded-l-lg border border-line bg-white px-3 py-2 text-sm placeholder:text-muted/80 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
             />
             <button
               type="submit"
-              className="rounded-r bg-brand text-white px-3 text-sm whitespace-nowrap shrink-0"
+              className="rounded-r-lg bg-brand text-white px-3 sm:px-4 text-sm font-medium whitespace-nowrap shrink-0 hover:bg-brand-dark"
             >
               {t('search')}
             </button>
           </form>
-          <nav className="flex items-center gap-3 text-sm ml-auto">
+          <nav className="flex items-center gap-2 sm:gap-3 text-sm ml-auto min-w-0">
             <Link
               href="/post"
-              className="rounded bg-brand text-white px-3 py-1.5 font-medium hover:bg-brand-dark"
+              className="rounded-lg bg-coral text-white px-3 py-2 font-medium shadow-sm hover:bg-[#c95440] hover:-translate-y-px"
             >
-              + {t('post')}
+              <span className="sm:hidden">+</span><span className="hidden sm:inline">+ {t('post')}</span>
             </Link>
             {loading ? null : me ? (
               <>
-                <Link href="/messages">{t('messages')}</Link>
+                <Link href="/messages" className="hidden lg:inline hover:text-brand">{t('messages')}</Link>
                 {['editor', 'moderator', 'admin', 'super_admin'].includes(me.role) && (
-                  <Link href="/admin">{t('admin')}</Link>
+                  <Link href="/admin" className="hidden lg:inline hover:text-brand">{t('admin')}</Link>
                 )}
-                <Link href="/me" className="hover:text-brand">
-                  {me.displayName}
-                </Link>
+                <Link href="/me" className="max-w-24 truncate hover:text-brand">{me.displayName}</Link>
                 <button
                   type="button"
                   onClick={() => void logout()}
-                  className="text-muted hover:text-brand"
+                  className="hidden sm:inline text-muted hover:text-brand"
                 >
                   {t('logout')}
                 </button>
               </>
             ) : (
-              <Link href="/login" className="hover:text-brand">
+              <Link href="/login" className="hover:text-brand whitespace-nowrap">
                 {t('login')}
               </Link>
             )}
             <button
               type="button"
-              className="text-muted hover:text-brand border border-gray-300 rounded px-2 py-0.5"
+              className="text-muted hover:text-brand border border-line rounded-lg px-2 py-1 bg-white"
               onClick={() =>
                 router.replace(`${pathname}${query ? `?${query}` : ''}`, { locale: otherLocale })
               }
@@ -90,14 +88,15 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
             </button>
           </nav>
         </div>
-        <nav className="flex gap-1 overflow-x-auto text-sm -mb-px">
+        <div className="sm:hidden pb-2"><CitySelect cities={cities} /></div>
+        <nav className="flex gap-1 overflow-x-auto text-sm -mb-px scrollbar-none">
           {NAV.map((item) => {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.key}
                 href={item.href}
-                className={`px-3 py-2 border-b-2 whitespace-nowrap ${active ? 'border-brand text-brand font-medium' : 'border-transparent hover:text-brand'}`}
+                className={`px-3 py-2.5 border-b-2 whitespace-nowrap ${active ? 'border-brand text-brand font-medium' : 'border-transparent text-muted hover:text-brand'}`}
               >
                 {t(item.key)}
               </Link>

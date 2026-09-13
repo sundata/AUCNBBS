@@ -87,7 +87,7 @@ export function ListingCard({ l, compact = false }: { l: ListingSummary; compact
       <div className="flex items-start gap-2">
         {l.promoted && <span className="text-xs text-amber-800">{t('promoted')}</span>}
         <span
-          className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${l.intent === 'wanted' ? 'bg-amber-100 text-amber-800' : 'bg-red-50 text-brand'}`}
+          className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${l.intent === 'wanted' ? 'bg-amber-100 text-amber-800' : 'bg-coral/10 text-coral'}`}
         >
           {t(`intentLabel.${l.type}.${l.intent}`)}
         </span>
