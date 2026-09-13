@@ -357,7 +357,7 @@ export function PublishForm({
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+    <div className="min-w-0 max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-4">
       <h1 className="text-xl font-bold">{initialListing ? tl('edit') : t('title')}</h1>
       <div>
         <div className="text-sm text-muted mb-1">{t('chooseType')}</div>
@@ -400,7 +400,7 @@ export function PublishForm({
           </Field>
         )}
         {kind === 'post' && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label={t('board')}>
               <Select
                 value={boardSlug}
@@ -471,7 +471,7 @@ export function PublishForm({
         {kind !== 'post' && (
           <Field label={kind === 'job' ? tj('salary') : t('price')} optional={kind !== 'job'}>
             {kind === 'job' ? (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <input
                   type="number"
                   min={0}
@@ -498,7 +498,7 @@ export function PublishForm({
                 />
               </div>
             ) : (
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-sm">A$</span>
                 <input
                   type="number"
@@ -525,7 +525,7 @@ export function PublishForm({
         {kind === 'housing' && (
           <fieldset className="border rounded p-3 space-y-3">
             <legend className="text-sm px-1">{t('housingFields')}</legend>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label={t('kind')}>
                 <Select
                   value={hKind}
@@ -613,7 +613,7 @@ export function PublishForm({
                 className={inputCls}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label={t('employmentType')}>
                 <Select
                   value={employmentType}
@@ -636,7 +636,7 @@ export function PublishForm({
         {kind === 'item' && (
           <fieldset className="border rounded p-3 space-y-3">
             <legend className="text-sm px-1">{t('itemFields')}</legend>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label={t('category')}>
                 <Select
                   value={category}
@@ -686,7 +686,7 @@ export function PublishForm({
         {kind === 'service' && (
           <fieldset className="border rounded p-3 space-y-3">
             <legend className="text-sm px-1">{t('serviceFields')}</legend>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label={t('category')}>
                 <Select
                   value={sCategory}

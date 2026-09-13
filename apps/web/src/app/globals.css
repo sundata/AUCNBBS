@@ -16,6 +16,7 @@ body {
   @apply bg-surface text-ink antialiased;
   font-family: 'Avenir Next', 'PingFang SC', 'Hiragino Sans', sans-serif;
   background-image: linear-gradient(180deg, rgba(255, 253, 249, 0.72), rgba(245, 241, 233, 0.94));
+  overflow-x: clip;
 }
 
 * {
