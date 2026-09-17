@@ -4,8 +4,10 @@ import { api, qs, type SearchResult } from '@/lib/api';
 import { formatDate, LISTING_ROUTES } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
+import { AdSlot } from '@/components/ad-slot';
+import { SaveSearchButton } from '@/components/save-search-button';
 
-const SCOPES = ['all', 'listings', 'posts', 'articles'] as const;
+const SCOPES = ['all', 'listings', 'posts', 'articles', 'businesses', 'events'] as const;
 type Scope = (typeof SCOPES)[number];
 
 export default async function SearchPage({
@@ -35,7 +37,11 @@ export default async function SearchPage({
       ? `/${LISTING_ROUTES[h.listingType]}/${h.id}`
       : h.kind === 'post'
         ? `/community/posts/${h.id}`
-        : `/news/${h.slug ?? h.id}`;
+        : h.kind === 'business'
+          ? `/businesses/${h.id}`
+          : h.kind === 'event'
+            ? `/events/${h.id}`
+            : `/news/${h.slug ?? h.id}`;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 max-w-3xl mx-auto">
@@ -64,9 +70,18 @@ export default async function SearchPage({
         ))}
       </div>
       {result && (
-        <p className="text-sm text-muted mb-2">{t('results', { q, count: result.total })}</p>
+        <div className="flex items-center gap-4 mb-2">
+          <p className="text-sm text-muted">{t('results', { q, count: result.total })}</p>
+          <SaveSearchButton
+            query={q}
+            filters={{ scope: scope === 'all' ? undefined : scope, city: city?.slug }}
+          />
+        </div>
       )}
       {result && result.hits.length === 0 && <Empty text={t('empty')} />}
+      {result && result.hits.length > 2 && (
+        <AdSlot placement="search" cityId={city?.id} label={t('sponsored')} />
+      )}
       <ul className="divide-y divide-gray-100">
         {result?.hits.map((h) => (
           <li key={`${h.kind}-${h.id}`} className="py-3">

@@ -26,6 +26,7 @@ import {
 } from '@aws-sdk/client-s3';
 import type { Response } from 'express';
 import { isPubliclyVisible } from '@aucn/domain';
+import { forceScanVerdict, scanImage } from '../../common/image-scan';
 import { AuthGuard, OptionalAuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { AccessTokenPayload } from '../auth/auth.service';
@@ -42,10 +43,10 @@ export class MediaController {
   private async listing(id: string, user?: AccessTokenPayload, write = false) {
     const row = await this.prisma.listing.findUnique({ where: { id } });
     if (!row) throw new NotFoundException();
+    // Listings under review stay editable for images so reviewers see the full post.
     if (
       write &&
-      (row.ownerId !== user?.sub ||
-        ['removed', 'archived', 'completed', 'pending_review'].includes(row.status))
+      (row.ownerId !== user?.sub || ['removed', 'archived', 'completed'].includes(row.status))
     )
       throw new ForbiddenException();
     if (!write && row.ownerId !== user?.sub && !isPubliclyVisible(row.status, row.expiresAt))
@@ -55,9 +56,9 @@ export class MediaController {
   @Get('listings/:id')
   @UseGuards(OptionalAuthGuard)
   async list(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: AccessTokenPayload) {
-    await this.listing(id, user);
+    const row = await this.listing(id, user);
     return this.prisma.media.findMany({
-      where: { listingId: id },
+      where: { listingId: id, ...(row.ownerId === user?.sub ? {} : { flaggedAt: null }) },
       select: { id: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
@@ -91,6 +92,8 @@ export class MediaController {
       throw new UnprocessableEntityException('Invalid image; JPEG, PNG or WebP required');
     }
     const key = `${randomUUID()}.webp`;
+    // §5.10: scan before persisting; flagged media is kept for review but hidden.
+    const scan = (await forceScanVerdict()) ?? (await scanImage(encoded, 'image/webp'));
     if (process.env.S3_BUCKET)
       await this.s3().send(
         new PutObjectCommand({
@@ -112,13 +115,21 @@ export class MediaController {
         >`SELECT owner_id, status FROM listings WHERE id = ${id}::uuid FOR UPDATE`;
         if (
           rows[0]?.owner_id !== user.sub ||
-          ['removed', 'archived', 'completed', 'pending_review'].includes(rows[0]?.status)
+          ['removed', 'archived', 'completed'].includes(rows[0]?.status)
         )
           throw new ForbiddenException();
         if ((await tx.media.count({ where: { listingId: id } })) >= 8)
           throw new UnprocessableEntityException('Maximum 8 images');
         return tx.media.create({
-          data: { ownerId: user.sub, listingId: id, key, bytes: encoded.length },
+          data: {
+            ownerId: user.sub,
+            listingId: id,
+            key,
+            bytes: encoded.length,
+            ...(scan.verdict !== 'clean'
+              ? { flaggedAt: new Date(), flagReason: `${scan.verdict}:${scan.reason ?? ''}` }
+              : {}),
+          },
           select: { id: true },
         });
       });
@@ -127,6 +138,67 @@ export class MediaController {
       throw e;
     }
   }
+  @Post('avatar')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 8 * 1024 * 1024, files: 1 } }))
+  async avatar(
+    @CurrentUser() user: AccessTokenPayload,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) throw new UnprocessableEntityException('Choose a JPEG, PNG or WebP image');
+    let encoded: Buffer;
+    try {
+      encoded = await sharp(file.buffer, { limitInputPixels: 25_000_000, animated: false })
+        .rotate()
+        .resize({ width: 512, height: 512, fit: 'cover' })
+        .webp({ quality: 82 })
+        .toBuffer();
+    } catch {
+      throw new UnprocessableEntityException('Invalid image; JPEG, PNG or WebP required');
+    }
+    const key = `${randomUUID()}.webp`;
+    if (process.env.S3_BUCKET)
+      await this.s3().send(
+        new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET,
+          Key: key,
+          Body: encoded,
+          ContentType: 'image/webp',
+        }),
+      );
+    else {
+      await mkdir(this.root(), { recursive: true });
+      await writeFile(resolve(this.root(), key), encoded, { flag: 'wx' });
+    }
+    let previousKey: string | null = null;
+    try {
+      const media = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.media.create({
+          data: { ownerId: user.sub, purpose: 'avatar', key, bytes: encoded.length },
+          select: { id: true },
+        });
+        const old = await tx.user.findUnique({
+          where: { id: user.sub },
+          select: { avatarMediaId: true },
+        });
+        await tx.user.update({ where: { id: user.sub }, data: { avatarMediaId: created.id } });
+        if (old?.avatarMediaId) {
+          const stale = await tx.media.findUnique({ where: { id: old.avatarMediaId } });
+          if (stale?.purpose === 'avatar') {
+            await tx.media.delete({ where: { id: stale.id } });
+            previousKey = stale.key;
+          }
+        }
+        return created;
+      });
+      if (previousKey) await this.removeBlob(previousKey).catch(() => undefined);
+      return media;
+    } catch (e) {
+      await this.removeBlob(key);
+      throw e;
+    }
+  }
+
   @Get(':id')
   @UseGuards(OptionalAuthGuard)
   async get(
@@ -135,8 +207,16 @@ export class MediaController {
     @CurrentUser() user?: AccessTokenPayload,
   ) {
     const media = await this.prisma.media.findUnique({ where: { id } });
-    if (!media || !media.listingId) throw new NotFoundException();
-    await this.listing(media.listingId, user);
+    if (!media) throw new NotFoundException();
+    // Scanner-flagged media is quarantined from everyone except the owner.
+    if (media.flaggedAt && media.ownerId !== user?.sub) throw new NotFoundException();
+    if (media.purpose === 'avatar') {
+      // Avatars are public profile assets.
+    } else if (media.listingId) {
+      await this.listing(media.listingId, user);
+    } else {
+      throw new NotFoundException();
+    }
     const bytes = process.env.S3_BUCKET
       ? Buffer.from(
           await (

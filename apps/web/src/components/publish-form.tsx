@@ -123,6 +123,7 @@ export function PublishForm({
   const [contactPolicy, setContactPolicy] = useState<(typeof CONTACT_POLICIES)[number]>(
     (initialListing?.contactPolicy as (typeof CONTACT_POLICIES)[number]) ?? 'in_app',
   );
+  const [contactPhone, setContactPhone] = useState('');
   // housing
   const [hKind, setHKind] = useState<(typeof HOUSING_KINDS)[number]>(
     (detail.kind as (typeof HOUSING_KINDS)[number]) ?? 'share',
@@ -183,6 +184,8 @@ export function PublishForm({
   );
   const [postType, setPostType] = useState<(typeof POST_TYPES)[number]>('discussion');
   const [anonymous, setAnonymous] = useState(false);
+  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+  const [pollMulti, setPollMulti] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,7 +204,17 @@ export function PublishForm({
 
   function buildPayload(): unknown {
     if (kind === 'post')
-      return { boardSlug, type: postType, title, body, cityId: cityId || undefined, anonymous };
+      return {
+        boardSlug,
+        type: postType,
+        title,
+        body,
+        cityId: cityId || undefined,
+        anonymous,
+        ...(postType === 'poll'
+          ? { poll: { options: pollOptions.filter((o) => o.trim()), multi: pollMulti } }
+          : {}),
+      };
     const base = {
       type: kind,
       intent,
@@ -210,6 +223,7 @@ export function PublishForm({
       cityId,
       priceMinor: toMinor(price),
       contactPolicy,
+      contactPhone: contactPhone || undefined,
     };
     switch (kind) {
       case 'housing':
@@ -421,6 +435,42 @@ export function PublishForm({
               />
             </Field>
           </div>
+        )}
+        {kind === 'post' && postType === 'poll' && (
+          <Field label={t('pollOptions')}>
+            <div className="space-y-1">
+              {pollOptions.map((opt, i) => (
+                <input
+                  key={i}
+                  value={opt}
+                  maxLength={80}
+                  placeholder={t('pollOption', { n: i + 1 })}
+                  onChange={(e) =>
+                    setPollOptions((opts) => opts.map((o, j) => (j === i ? e.target.value : o)))
+                  }
+                  className="block w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                />
+              ))}
+              <div className="flex gap-3 items-center">
+                <button
+                  type="button"
+                  disabled={pollOptions.length >= 10}
+                  onClick={() => setPollOptions((o) => [...o, ''])}
+                  className="text-xs text-brand underline"
+                >
+                  {t('pollAddOption')}
+                </button>
+                <label className="text-xs flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={pollMulti}
+                    onChange={(e) => setPollMulti(e.target.checked)}
+                  />
+                  {t('pollMulti')}
+                </label>
+              </div>
+            </div>
+          </Field>
         )}
         <Field label={t('city')}>
           <Select
@@ -734,14 +784,28 @@ export function PublishForm({
         )}
 
         {kind !== 'post' ? (
-          <Field label={t('contactPolicy')}>
-            <Select
-              value={contactPolicy}
-              onChange={setContactPolicy}
-              options={CONTACT_POLICIES}
-              render={(v) => t(`contactPolicies.${v}`)}
-            />
-          </Field>
+          <>
+            <Field label={t('contactPolicy')}>
+              <Select
+                value={contactPolicy}
+                onChange={setContactPolicy}
+                options={CONTACT_POLICIES}
+                render={(v) => t(`contactPolicies.${v}`)}
+              />
+            </Field>
+            {contactPolicy !== 'in_app' && (
+              <Field label={t('contactPhone')}>
+                <input
+                  type="tel"
+                  required
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  placeholder="+61412345678"
+                  className="w-full rounded border border-gray-300 px-3 py-2"
+                />
+              </Field>
+            )}
+          </>
         ) : (
           <label className="flex items-center gap-1 text-sm">
             <input

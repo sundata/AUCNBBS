@@ -10,9 +10,10 @@ import { writeAuth } from '@/lib/auth-client';
 
 interface TokenResponse {
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
   isNewUser: boolean;
+  mfaRequired?: boolean;
+  ticket?: string;
 }
 
 export function LoginForm() {
@@ -22,8 +23,9 @@ export function LoginForm() {
   const sp = useSearchParams();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'mfa'>('email');
   const [ttl, setTtl] = useState(10);
+  const [mfaTicket, setMfaTicket] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,13 +54,17 @@ export function LoginForm() {
         method: 'POST',
         body: JSON.stringify({ email, code }),
       });
-      writeAuth({
-        accessToken: r.accessToken,
-        refreshToken: r.refreshToken,
-        expiresAt: Date.now() + r.expiresIn * 1000,
-      });
+      if (r.mfaRequired && r.ticket) {
+        setMfaTicket(r.ticket);
+        setCode('');
+        setStep('mfa');
+        return;
+      }
+      writeAuth({ accessToken: r.accessToken, expiresAt: Date.now() + r.expiresIn * 1000 });
       const next = sp.get('next');
-      router.push(next && /^\/(?![\/\\])/.test(next) ? next : '/');
+      // New accounts land on onboarding to pick language/city/interests (§5.1).
+      if (r.isNewUser) router.push('/onboarding');
+      else router.push(next && /^\/(?![\/\\])/.test(next) ? next : '/');
     } catch (e) {
       setError(
         e instanceof ApiError && e.problem.status === 401
@@ -72,6 +78,23 @@ export function LoginForm() {
     }
   }
 
+  async function verifyMfa() {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<TokenResponse>('/auth/mfa/complete', {
+        method: 'POST',
+        body: JSON.stringify({ ticket: mfaTicket, code }),
+      });
+      writeAuth({ accessToken: r.accessToken, expiresAt: Date.now() + r.expiresIn * 1000 });
+      router.push('/');
+    } catch (e) {
+      setError(e instanceof ApiError ? t('invalid') : tc('error'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="max-w-sm mx-auto bg-white rounded-lg border border-gray-200 p-6">
       <h1 className="text-xl font-bold">{t('title')}</h1>
@@ -79,7 +102,7 @@ export function LoginForm() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void (step === 'email' ? request() : verify());
+          void (step === 'email' ? request() : step === 'code' ? verify() : verifyMfa());
         }}
         className="space-y-3"
       >
@@ -113,13 +136,28 @@ export function LoginForm() {
             </label>
           </>
         )}
+        {step === 'mfa' && (
+          <label className="block text-sm">
+            <span className="text-muted">{t('mfaCode')}</span>
+            <input
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              required
+              autoFocus
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="mt-1 w-full rounded border border-gray-300 px-3 py-2 tracking-widest"
+            />
+          </label>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={busy}
           className="w-full rounded bg-brand text-white py-2 text-sm font-medium disabled:opacity-50"
         >
-          {step === 'email' ? t('sendCode') : t('verify')}
+          {step === 'email' ? t('sendCode') : step === 'mfa' ? t('mfaVerify') : t('verify')}
         </button>
         {step === 'code' && (
           <button

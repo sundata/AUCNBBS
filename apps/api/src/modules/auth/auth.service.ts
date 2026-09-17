@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import {
+  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -8,39 +9,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
-
-async function sendResendEmail({
-  apiKey,
-  from,
-  to,
-  subject,
-  text,
-}: {
-  apiKey: string;
-  from: string;
-  to: string;
-  subject: string;
-  text: string;
-}): Promise<void> {
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      text,
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Resend API rejected the email: ${response.status} ${detail}`);
-  }
-}
+import { sendResendEmail } from '../../common/mail';
+import { generateTotpSecret, totpUri, verifyTotp } from '../../common/totp';
 
 export interface AccessTokenPayload {
   sub: string;
@@ -53,6 +23,25 @@ export interface TokenPair {
   refreshToken: string;
   expiresIn: number;
 }
+
+/** Returned instead of a token pair when the account requires a second factor. */
+export interface MfaRequired {
+  mfaRequired: true;
+  ticket: string;
+}
+
+export type SignInResult =
+  (TokenPair & { isNewUser: boolean; mfaSetupRequired?: boolean }) | MfaRequired;
+
+/** Roles that must enrol in TOTP before using staff surfaces (§5.1). */
+export const MFA_REQUIRED_ROLES = [
+  'moderator',
+  'editor',
+  'support',
+  'compliance',
+  'admin',
+  'super_admin',
+];
 
 const OTP_MAX_ATTEMPTS = 5;
 
@@ -165,7 +154,8 @@ export class AuthService {
     rawEmail: string,
     code: string,
     userAgent?: string,
-  ): Promise<TokenPair & { isNewUser: boolean }> {
+    ip?: string,
+  ): Promise<SignInResult> {
     const email = rawEmail.trim().toLowerCase();
     const challenge = await this.prisma.otpChallenge.findFirst({
       where: { email, consumedAt: null, expiresAt: { gt: new Date() } },
@@ -191,7 +181,7 @@ export class AuthService {
       data: { consumedAt: new Date() },
     });
     if (consumed.count !== 1) throw new UnauthorizedException('Code already used or expired');
-    return this.signInIdentity('email_otp', '', email, userAgent);
+    return this.signInIdentity('email_otp', '', email, userAgent, ip);
   }
 
   async signInIdentity(
@@ -199,7 +189,8 @@ export class AuthService {
     providerAppId: string,
     providerSubject: string,
     userAgent?: string,
-  ): Promise<TokenPair & { isNewUser: boolean }> {
+    ip?: string,
+  ): Promise<SignInResult> {
     const where = {
       provider_providerAppId_providerSubject: { provider, providerAppId, providerSubject },
     };
@@ -222,8 +213,83 @@ export class AuthService {
     const role = identity.user.role;
     const isNewUser = !existing;
     await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
-    const tokens = await this.issueTokens(userId, role, userAgent);
-    return { ...tokens, isNewUser };
+    if (identity.user.totpEnabledAt && identity.user.totpSecret) {
+      const ticket = randomBytes(32).toString('base64url');
+      await this.prisma.mfaChallenge.create({
+        data: {
+          userId,
+          token: ticket,
+          expiresAt: new Date(Date.now() + 5 * 60_000),
+        },
+      });
+      return { mfaRequired: true, ticket };
+    }
+    const tokens = await this.issueTokens(userId, role, userAgent, ip);
+    const mfaSetupRequired = MFA_REQUIRED_ROLES.includes(role);
+    return { ...tokens, isNewUser, mfaSetupRequired };
+  }
+
+  // ---------- TOTP / MFA (§5.1) ----------
+
+  async totpSetup(userId: string): Promise<{ secret: string; uri: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    if (user.totpEnabledAt) throw new ForbiddenException('MFA already enabled');
+    const secret = generateTotpSecret();
+    await this.prisma.user.update({ where: { id: userId }, data: { totpSecret: secret } });
+    const account = `user-${userId.slice(0, 8)}`;
+    return { secret, uri: totpUri(secret, account) };
+  }
+
+  async totpEnable(userId: string, code: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.totpSecret) throw new UnauthorizedException('Run MFA setup first');
+    if (!verifyTotp(user.totpSecret, code)) throw new UnauthorizedException('Invalid code');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpEnabledAt: new Date() },
+    });
+    await this.prisma.auditLog.create({
+      data: { actorId: userId, action: 'mfa.enable', subject: `user:${userId}` },
+    });
+  }
+
+  async totpDisable(userId: string, code: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.totpSecret || !user.totpEnabledAt) throw new ForbiddenException('MFA not enabled');
+    if (MFA_REQUIRED_ROLES.includes(user.role))
+      throw new ForbiddenException('Staff accounts cannot disable MFA');
+    if (!verifyTotp(user.totpSecret, code)) throw new UnauthorizedException('Invalid code');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpSecret: null, totpEnabledAt: null },
+    });
+    await this.prisma.auditLog.create({
+      data: { actorId: userId, action: 'mfa.disable', subject: `user:${userId}` },
+    });
+  }
+
+  async mfaComplete(
+    ticket: string,
+    code: string,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<TokenPair> {
+    const challenge = await this.prisma.mfaChallenge.findUnique({
+      where: { token: ticket },
+      include: { user: true },
+    });
+    if (!challenge || challenge.consumedAt || challenge.expiresAt <= new Date())
+      throw new UnauthorizedException('MFA challenge expired');
+    const consumed = await this.prisma.mfaChallenge.updateMany({
+      where: { id: challenge.id, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+    if (consumed.count !== 1) throw new UnauthorizedException('MFA challenge already used');
+    const { user } = challenge;
+    if (!user.totpSecret || !verifyTotp(user.totpSecret, code))
+      throw new UnauthorizedException('Invalid code');
+    return this.issueTokens(user.id, user.role, userAgent, ip);
   }
 
   async refresh(refreshToken: string): Promise<TokenPair> {
@@ -239,13 +305,18 @@ export class AuthService {
     ) {
       throw new UnauthorizedException('Refresh token invalid');
     }
-    // Rotate: revoke old session, issue a new one.
+    // Rotate: revoke old session, issue a new one carrying the same device context.
     const revoked = await this.prisma.session.updateMany({
       where: { id: session.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
     if (revoked.count !== 1) throw new UnauthorizedException('Refresh token already used');
-    return this.issueTokens(session.userId, session.user.role, session.userAgent ?? undefined);
+    return this.issueTokens(
+      session.userId,
+      session.user.role,
+      session.userAgent ?? undefined,
+      session.ipHash ?? undefined,
+    );
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -269,19 +340,39 @@ export class AuthService {
         include: { user: { select: { role: true } } },
       });
       if (!session) throw new UnauthorizedException('Session unavailable');
+      // Opportunistic last-seen touch for the device list (§5.1 会话管理).
+      void this.prisma.session
+        .update({ where: { id: session.id }, data: { lastSeenAt: new Date() } })
+        .catch(() => undefined);
       return { ...payload, role: session.user.role };
     } catch {
       throw new UnauthorizedException('Invalid access token');
     }
   }
 
-  private async issueTokens(userId: string, role: string, userAgent?: string): Promise<TokenPair> {
+  /** Public token issuance for verified non-OTP flows (passkey sign-in). */
+  async issueSession(
+    userId: string,
+    role: string,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<TokenPair> {
+    return this.issueTokens(userId, role, userAgent, ip);
+  }
+
+  private async issueTokens(
+    userId: string,
+    role: string,
+    userAgent?: string,
+    ip?: string,
+  ): Promise<TokenPair> {
     const refreshToken = randomBytes(48).toString('base64url');
     const session = await this.prisma.session.create({
       data: {
         userId,
         tokenFamilyHash: sha256(refreshToken),
         userAgent,
+        ipHash: ip ? sha256(ip) : undefined,
         expiresAt: new Date(Date.now() + this.refreshTtlSeconds * 1000),
       },
     });

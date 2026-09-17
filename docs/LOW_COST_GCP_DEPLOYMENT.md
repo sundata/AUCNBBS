@@ -24,12 +24,12 @@
 
 ### 推荐配置
 
-| 规格类型 | 机型 / 规格 | 预估月费（us-central1） | 适用场景 | 评估 |
-| --- | --- | --- | --- | --- |
-| 极致省钱型 | e2-micro（2 vCPU, 1 GB RAM） | 约 $0 ~ $7 / 月（受免费层额度影响） | 轻量 Node.js / Go / Python 微服务 | 仅适合轻量负载，若前端有 SSR（如 Next.js）极易在构建/运行高峰期触发 OOM |
-| 推荐起步型 | e2-small（2 vCPU, 2 GB RAM） | 约 $14 ~ $16 / 月 | 最稳妥的低成本底线 | 搭配 2GB Swap，可从容运行 Postgres、API、Web 服务与 Nginx |
-| 磁盘 | 20 ~ 30 GB Balanced Persistent Disk | 约 $2 ~ $3 / 月 | 性能与成本平衡 | 高于标准磁盘，远低于 SSD 的高性能盘 |
-| 操作系统 | Ubuntu 22.04 LTS | 免费 | Docker + Nginx + Postgres 兼容性最佳 | 社区支持完善，适合长期维护 |
+| 规格类型   | 机型 / 规格                         | 预估月费（us-central1）             | 适用场景                             | 评估                                                                    |
+| ---------- | ----------------------------------- | ----------------------------------- | ------------------------------------ | ----------------------------------------------------------------------- |
+| 极致省钱型 | e2-micro（2 vCPU, 1 GB RAM）        | 约 $0 ~ $7 / 月（受免费层额度影响） | 轻量 Node.js / Go / Python 微服务    | 仅适合轻量负载，若前端有 SSR（如 Next.js）极易在构建/运行高峰期触发 OOM |
+| 推荐起步型 | e2-small（2 vCPU, 2 GB RAM）        | 约 $14 ~ $16 / 月                   | 最稳妥的低成本底线                   | 搭配 2GB Swap，可从容运行 Postgres、API、Web 服务与 Nginx               |
+| 磁盘       | 20 ~ 30 GB Balanced Persistent Disk | 约 $2 ~ $3 / 月                     | 性能与成本平衡                       | 高于标准磁盘，远低于 SSD 的高性能盘                                     |
+| 操作系统   | Ubuntu 22.04 LTS                    | 免费                                | Docker + Nginx + Postgres 兼容性最佳 | 社区支持完善，适合长期维护                                              |
 
 > 关键操作提示：
 >
@@ -222,7 +222,7 @@ services:
     env_file:
       - .env.production
     ports:
-      - "127.0.0.1:3000:3000"
+      - '127.0.0.1:3000:3000'
     deploy:
       resources:
         limits:
@@ -234,7 +234,7 @@ services:
     env_file:
       - .env.production
     ports:
-      - "127.0.0.1:8080:80"
+      - '127.0.0.1:8080:80'
     deploy:
       resources:
         limits:

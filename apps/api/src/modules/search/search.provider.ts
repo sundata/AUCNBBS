@@ -2,7 +2,7 @@ import type { ListingType } from '@aucn/domain';
 
 export const SEARCH_PROVIDER = Symbol('SEARCH_PROVIDER');
 
-export type SearchScope = 'all' | 'listings' | 'posts' | 'articles';
+export type SearchScope = 'all' | 'listings' | 'posts' | 'articles' | 'businesses' | 'events';
 
 export interface SearchQuery {
   q: string;
@@ -13,7 +13,7 @@ export interface SearchQuery {
 }
 
 export interface SearchHit {
-  kind: 'listing' | 'post' | 'article';
+  kind: 'listing' | 'post' | 'article' | 'business' | 'event';
   id: string;
   title: string;
   snippet: string;

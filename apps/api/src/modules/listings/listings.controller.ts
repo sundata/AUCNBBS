@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   createListingSchema,
   LISTING_INTENTS,
@@ -30,6 +31,11 @@ const listQuerySchema = cursorQuerySchema.extend({
   cityId: z.string().uuid().optional(),
   priceMin: z.coerce.number().int().nonnegative().optional(),
   priceMax: z.coerce.number().int().nonnegative().optional(),
+  suburb: z.string().trim().min(1).max(80).optional(),
+  bedrooms: z.coerce.number().int().min(0).max(20).optional(),
+  sort: z.enum(['latest', 'price_asc', 'price_desc', 'near']).optional(),
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lng: z.coerce.number().min(-180).max(180).optional(),
 });
 const editSchema = z.object({ version: z.number().int().positive(), listing: createListingSchema });
 const statusSchema = z.object({ status: z.enum(LISTING_STATUSES) });
@@ -95,5 +101,16 @@ export class ListingsController {
     @Body(new ZodPipe(statusSchema)) body: z.infer<typeof statusSchema>,
   ): Promise<ListingDetailDto> {
     return this.listings.changeStatus(user.sub, id, body.status);
+  }
+
+  @Post(':id/phone')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  revealPhone(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ phone: string }> {
+    return this.listings.revealPhone(user.sub, id);
   }
 }

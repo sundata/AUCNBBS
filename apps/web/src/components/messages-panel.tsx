@@ -8,7 +8,9 @@ import { getAccessToken, useAuth } from '@/lib/auth-client';
 interface Conversation {
   id: string;
   title: string;
-  peer: { displayName: string };
+  status: string;
+  isRequest: boolean;
+  peer: { id: string; displayName: string };
   unread: number;
 }
 interface Message {
@@ -16,6 +18,19 @@ interface Message {
   senderId: string;
   body: string;
   createdAt: string;
+  recalled: boolean;
+  masked: boolean;
+  hasLink: boolean;
+}
+interface ConvoDetail {
+  conversation: {
+    id: string;
+    status: string;
+    isRecipient: boolean;
+    listing: { id: string; title: string; type: string; status: string } | null;
+  };
+  items: Message[];
+  nextCursor: string | null;
 }
 interface Notice {
   id: string;
@@ -23,12 +38,27 @@ interface Notice {
   subjectId: string;
   readAt: string | null;
 }
+const KIND_KEYS = new Map([
+  ['listing.approved', 'listingApproved'],
+  ['listing.rejected', 'listingRejected'],
+  ['moderation.actioned', 'moderationActioned'],
+  ['appeal.upheld', 'appealUpheld'],
+  ['appeal.overturned', 'appealOverturned'],
+  ['claim.approved', 'claimApproved'],
+  ['claim.rejected', 'claimRejected'],
+  ['event.rsvp', 'eventRsvp'],
+  ['event.promoted', 'eventPromoted'],
+  ['event.cancelled', 'eventCancelled'],
+  ['event.reminder', 'eventReminder'],
+  ['savedSearch.alert', 'savedSearchAlert'],
+]);
 export function MessagesPanel() {
   const t = useTranslations('messages');
   const { me, loading } = useAuth();
   const search = useSearchParams();
   const [selected, setSelected] = useState(search.get('conversation') ?? '');
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [convo, setConvo] = useState<ConvoDetail['conversation'] | null>(null);
   const [next, setNext] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [older, setOlder] = useState<string | null>(null);
@@ -65,10 +95,12 @@ export function MessagesPanel() {
     let initialLoad = true;
     setMessages([]);
     setOlder(null);
+    setConvo(null);
     const load = async () => {
       const token = await getAccessToken();
-      const page = await api<Page<Message>>(`/messages/conversations/${selected}`, { token });
+      const page = await api<ConvoDetail>(`/messages/conversations/${selected}`, { token });
       if (cancelled) return;
+      setConvo(page.conversation);
       setMessages((rows) => [...new Map([...rows, ...page.items].map((m) => [m.id, m])).values()]);
       if (initialLoad) setOlder(page.nextCursor);
       initialLoad = false;
@@ -87,6 +119,7 @@ export function MessagesPanel() {
   }, [me, selected, fail]);
   if (loading) return <p>{t('loading')}</p>;
   if (!me) return <Link href="/login?next=/messages">{t('login')}</Link>;
+  const selectedConvo = conversations.find((c) => c.id === selected);
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-bold">{t('title')}</h1>
@@ -105,6 +138,9 @@ export function MessagesPanel() {
               onClick={() => setSelected(c.id)}
             >
               <strong>{c.peer.displayName}</strong>
+              {c.isRequest && (
+                <span className="text-xs text-amber-700 ml-1">{t('requestTag')}</span>
+              )}
               <p>{c.title}</p>
               {c.unread > 0 && <span>{t('unread', { count: c.unread })}</span>}
             </button>
@@ -118,12 +154,57 @@ export function MessagesPanel() {
             <p>{t('select')}</p>
           ) : (
             <>
+              {convo?.isRecipient && convo.status === 'requested' && (
+                <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm space-y-2">
+                  <p>{t('requestPrompt')}</p>
+                  <div className="flex gap-2">
+                    {(['accept', 'decline'] as const).map((a) => (
+                      <button
+                        key={a}
+                        className="border rounded px-3 py-1"
+                        onClick={() =>
+                          void (async () => {
+                            await api(`/messages/conversations/${selected}/respond`, {
+                              method: 'POST',
+                              token: await getAccessToken(),
+                              body: JSON.stringify({ accept: a === 'accept' }),
+                            });
+                            setConvo({ ...convo, status: a === 'accept' ? 'active' : 'declined' });
+                          })().catch(fail)
+                        }
+                      >
+                        {t(a === 'accept' ? 'accept' : 'decline')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {convo?.status === 'declined' && (
+                <p className="text-sm text-muted">{t('declined')}</p>
+              )}
+              {selectedConvo && (
+                <button
+                  className="text-xs text-red-700 underline"
+                  onClick={() =>
+                    void (async () => {
+                      await api('/messages/blocks', {
+                        method: 'POST',
+                        token: await getAccessToken(),
+                        body: JSON.stringify({ userId: selectedConvo.peer.id }),
+                      });
+                      setSelected('');
+                    })().catch(fail)
+                  }
+                >
+                  {t('blockUser', { name: selectedConvo.peer.displayName })}
+                </button>
+              )}
               {older && (
                 <button
                   onClick={() =>
                     void (async () => {
                       const token = await getAccessToken();
-                      const page = await api<Page<Message>>(
+                      const page = await api<ConvoDetail>(
                         `/messages/conversations/${selected}${qs({ cursor: older })}`,
                         { token },
                       );
@@ -147,10 +228,42 @@ export function MessagesPanel() {
                       key={m.id}
                       className={`p-3 rounded whitespace-pre-wrap ${m.senderId === me.id ? 'bg-red-50 ml-8' : 'bg-gray-100 mr-8'}`}
                     >
-                      <p>{m.body}</p>
+                      {m.recalled ? (
+                        <p className="italic text-muted">{t('recalled')}</p>
+                      ) : (
+                        <p>{m.body}</p>
+                      )}
+                      {m.hasLink && !m.recalled && (
+                        <p className="text-xs text-amber-700 mt-1">⚠ {t('linkWarning')}</p>
+                      )}
+                      {m.masked && !m.recalled && (
+                        <p className="text-xs text-muted mt-1">{t('masked')}</p>
+                      )}
                       <time className="text-xs text-muted">
                         {new Date(m.createdAt).toLocaleString()}
                       </time>
+                      {m.senderId === me.id &&
+                        !m.recalled &&
+                        Date.now() - new Date(m.createdAt).getTime() < 10 * 60_000 && (
+                          <button
+                            className="text-xs text-red-700 underline ml-2"
+                            onClick={() =>
+                              void (async () => {
+                                await api(`/messages/${m.id}/recall`, {
+                                  method: 'POST',
+                                  token: await getAccessToken(),
+                                });
+                                setMessages((rows) =>
+                                  rows.map((r) =>
+                                    r.id === m.id ? { ...r, recalled: true, body: '' } : r,
+                                  ),
+                                );
+                              })().catch(fail)
+                            }
+                          >
+                            {t('recall')}
+                          </button>
+                        )}
                     </div>
                   ))}
               </div>
@@ -167,7 +280,7 @@ export function MessagesPanel() {
                       token,
                       body: JSON.stringify({ body }),
                     });
-                    setMessages((rows) => [...rows, m]);
+                    setMessages((rows) => [...rows, { ...m, recalled: false }]);
                     setBody('');
                   })()
                     .catch(fail)
@@ -204,6 +317,8 @@ export function MessagesPanel() {
             <button onClick={() => setSelected(n.subjectId)}>{t('newMessage')}</button>
           ) : n.kind === 'payment.paid' ? (
             t('paymentUpdate')
+          ) : KIND_KEYS.has(n.kind) ? (
+            <span>{t(`kind.${KIND_KEYS.get(n.kind)}`)}</span>
           ) : (
             t('reportUpdate')
           )}

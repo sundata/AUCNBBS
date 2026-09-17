@@ -3,8 +3,9 @@ import { PhoneController } from './phone.controller';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
-import { AuthGuard } from './auth.guard';
+import { AuthGuard, StaffMfaGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { PasskeyController } from './passkey.controller';
 
 @Module({
   imports: [
@@ -25,8 +26,8 @@ import { AuthService } from './auth.service';
       },
     }),
   ],
-  controllers: [AuthController, OAuthController, PhoneController],
-  providers: [AuthService, AuthGuard],
-  exports: [AuthService, AuthGuard, JwtModule],
+  controllers: [AuthController, OAuthController, PhoneController, PasskeyController],
+  providers: [AuthService, AuthGuard, StaffMfaGuard],
+  exports: [AuthService, AuthGuard, StaffMfaGuard, JwtModule],
 })
 export class AuthModule {}

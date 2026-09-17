@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { phoneEnabled } from './phone.controller';
 import { ZodPipe } from '../../common/zod.pipe';
+import { setAuthCookies } from '../../common/cookies';
 const providers = ['google', 'apple', 'wechat'] as const;
 const startSchema = z.object({
   provider: z.enum(providers),
@@ -148,7 +149,10 @@ export class OAuthController {
   }
   @Post('oauth/complete')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
-  async complete(@Body(new ZodPipe(completeSchema)) input: z.infer<typeof completeSchema>) {
+  async complete(
+    @Body(new ZodPipe(completeSchema)) input: z.infer<typeof completeSchema>,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const attempt = await this.prisma.oAuthAttempt.findUnique({ where: { id: input.state } });
     if (!attempt || attempt.expiresAt <= new Date())
       throw new UnauthorizedException('Login expired');
@@ -209,6 +213,8 @@ export class OAuthController {
     } catch {
       throw new UnauthorizedException('Provider verification failed');
     }
-    return this.auth.signInIdentity(attempt.provider, c.id, subject);
+    const result = await this.auth.signInIdentity(attempt.provider, c.id, subject);
+    if ('accessToken' in result) setAuthCookies(res, result);
+    return result;
   }
 }

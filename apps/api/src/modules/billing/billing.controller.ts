@@ -2,8 +2,13 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Headers,
+  Query,
   Req,
   UseGuards,
   BadRequestException,
@@ -18,7 +23,7 @@ import type { Request } from 'express';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
-import { isPubliclyVisible } from '@aucn/domain';
+import { adCampaignSchema, isPubliclyVisible, SUBSCRIPTION_KINDS } from '@aucn/domain';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -29,10 +34,22 @@ const checkoutSchema = z.object({
   requestId: z.string().uuid(),
   locale: z.enum(['zh', 'en']).default('zh'),
 });
+const subscriptionCheckoutSchema = z.object({
+  kind: z.enum(SUBSCRIPTION_KINDS),
+  businessId: z.string().uuid().optional(),
+  requestId: z.string().uuid(),
+  locale: z.enum(['zh', 'en']).default('zh'),
+});
 const refundSchema = z.object({
   paymentId: z.string().uuid(),
   reason: z.string().trim().min(5).max(1000),
 });
+const SUBSCRIPTION_PRICE_ENV: Record<string, string> = {
+  business_pro: 'STRIPE_BUSINESS_PRO_PRICE_ID',
+  member_plus: 'STRIPE_MEMBER_PLUS_PRICE_ID',
+  job_pack: 'STRIPE_JOB_PACK_PRICE_ID',
+};
+const JOB_PACK_CREDITS = 5;
 @Controller({ path: 'billing', version: '1' })
 export class BillingController {
   constructor(private readonly prisma: PrismaService) {}
@@ -134,15 +151,263 @@ export class BillingController {
       where: { ownerId: user.sub },
       select: {
         id: true,
+        kind: true,
         status: true,
         amountMinor: true,
         currency: true,
         createdAt: true,
         listing: { select: { title: true } },
+        invoice: { select: { number: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+
+  // ---------- Subscriptions & packages (§9.1) ----------
+
+  @Post('subscription/checkout')
+  @UseGuards(AuthGuard)
+  async subscriptionCheckout(
+    @CurrentUser() user: AccessTokenPayload,
+    @Body(new ZodPipe(subscriptionCheckoutSchema))
+    input: z.infer<typeof subscriptionCheckoutSchema>,
+  ) {
+    const stripe = this.client();
+    const priceEnv = SUBSCRIPTION_PRICE_ENV[input.kind];
+    const priceId = process.env[priceEnv];
+    if (!priceId) throw new ServiceUnavailableException('Subscription not configured');
+    const price = await stripe.prices.retrieve(priceId);
+    if (!price.active || price.currency !== 'aud' || !price.unit_amount)
+      throw new ServiceUnavailableException('Subscription price invalid');
+    if (input.kind === 'business_pro') {
+      if (!input.businessId) throw new BadRequestException('businessId required');
+      const b = await this.prisma.business.findUnique({ where: { id: input.businessId } });
+      if (!b || (b.claimedById !== user.sub && !['admin', 'super_admin'].includes(user.role)))
+        throw new ForbiddenException('Only the business owner can subscribe');
+      const existing = await this.prisma.subscription.findFirst({
+        where: { businessId: input.businessId, kind: 'business_pro', status: 'active' },
+      });
+      if (existing) throw new ConflictException('Already subscribed');
+    }
+    const isRecurring = input.kind !== 'job_pack';
+    const payment = await this.prisma.payment.upsert({
+      where: { id: input.requestId },
+      update: {},
+      create: {
+        id: input.requestId,
+        ownerId: user.sub,
+        kind: input.kind === 'job_pack' ? 'job_pack' : 'subscription',
+        businessId: input.businessId,
+        amountMinor: price.unit_amount,
+        currency: 'aud',
+      },
+    });
+    if (payment.ownerId !== user.sub || payment.status !== 'pending')
+      throw new ConflictException('Payment request cannot be reused');
+    const origin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: isRecurring ? 'subscription' : 'payment',
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: payment.id,
+        metadata: { paymentId: payment.id, kind: input.kind, businessId: input.businessId ?? '' },
+        subscription_data: isRecurring
+          ? {
+              metadata: {
+                paymentId: payment.id,
+                kind: input.kind,
+                businessId: input.businessId ?? '',
+              },
+            }
+          : undefined,
+        success_url: `${origin}/${input.locale}/billing?result=success`,
+        cancel_url: `${origin}/${input.locale}/billing?result=cancelled`,
+      },
+      { idempotencyKey: payment.id },
+    );
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { sessionId: session.id },
+    });
+    return { url: session.url };
+  }
+
+  @Get('subscriptions')
+  @UseGuards(AuthGuard)
+  async subscriptions(@CurrentUser() user: AccessTokenPayload) {
+    return {
+      items: await this.prisma.subscription.findMany({
+        where: { ownerId: user.sub },
+        orderBy: { createdAt: 'desc' },
+      }),
+    };
+  }
+
+  @Post('subscriptions/:id/cancel')
+  @UseGuards(AuthGuard)
+  async cancelSubscription(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const sub = await this.prisma.subscription.findUnique({ where: { id } });
+    if (!sub || sub.ownerId !== user.sub) throw new NotFoundException();
+    if (sub.status !== 'active') return { status: sub.status };
+    if (sub.stripeSubscriptionId) {
+      await this.client().subscriptions.update(sub.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    }
+    await this.prisma.subscription.update({
+      where: { id },
+      data: { cancelAtPeriodEnd: true },
+    });
+    return { ok: true };
+  }
+
+  // ---------- Ad campaigns (§9.1 原生广告) ----------
+
+  @Post('campaigns')
+  @UseGuards(AuthGuard)
+  async createCampaign(
+    @CurrentUser() user: AccessTokenPayload,
+    @Body(new ZodPipe(adCampaignSchema)) body: z.infer<typeof adCampaignSchema>,
+  ) {
+    const campaign = await this.prisma.adCampaign.create({
+      data: {
+        ...body,
+        ownerId: user.sub,
+        startsAt: new Date(body.startsAt),
+        endsAt: new Date(body.endsAt),
+      },
+    });
+    return campaign;
+  }
+
+  @Get('campaigns')
+  @UseGuards(AuthGuard)
+  async campaigns(@CurrentUser() user: AccessTokenPayload) {
+    return {
+      items: await this.prisma.adCampaign.findMany({
+        where: { ownerId: user.sub },
+        orderBy: { createdAt: 'desc' },
+      }),
+    };
+  }
+
+  @Patch('campaigns/:id')
+  @UseGuards(AuthGuard)
+  async updateCampaign(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodPipe(z.object({ status: z.enum(['paused', 'active', 'ended']) })))
+    body: { status: string },
+  ) {
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id } });
+    if (!campaign || campaign.ownerId !== user.sub) throw new NotFoundException();
+    return this.prisma.adCampaign.update({ where: { id }, data: { status: body.status } });
+  }
+
+  /** Pay for a draft campaign; the webhook flips it to active. */
+  @Post('campaigns/:id/checkout')
+  @UseGuards(AuthGuard)
+  async campaignCheckout(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(
+      new ZodPipe(
+        z.object({ requestId: z.string().uuid(), locale: z.enum(['zh', 'en']).default('zh') }),
+      ),
+    )
+    input: { requestId: string; locale: string },
+  ) {
+    const campaign = await this.prisma.adCampaign.findUnique({ where: { id } });
+    if (!campaign || campaign.ownerId !== user.sub) throw new NotFoundException();
+    if (campaign.status !== 'draft') throw new ConflictException('Campaign already funded');
+    const stripe = this.client();
+    const payment = await this.prisma.payment.upsert({
+      where: { id: input.requestId },
+      update: {},
+      create: {
+        id: input.requestId,
+        ownerId: user.sub,
+        kind: 'ad',
+        adCampaignId: campaign.id,
+        amountMinor: campaign.budgetMinor,
+        currency: 'aud',
+      },
+    });
+    if (payment.ownerId !== user.sub || payment.status !== 'pending')
+      throw new ConflictException('Payment request cannot be reused');
+    const origin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: 'payment',
+        line_items: [
+          {
+            price_data: {
+              currency: 'aud',
+              unit_amount: campaign.budgetMinor,
+              product_data: { name: `AUCN Hub ad campaign: ${campaign.name}` },
+            },
+            quantity: 1,
+          },
+        ],
+        client_reference_id: payment.id,
+        metadata: { paymentId: payment.id, kind: 'ad' },
+        payment_intent_data: { metadata: { paymentId: payment.id } },
+        success_url: `${origin}/${input.locale}/billing?result=success`,
+        cancel_url: `${origin}/${input.locale}/billing?result=cancelled`,
+      },
+      { idempotencyKey: payment.id },
+    );
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { sessionId: session.id },
+    });
+    return { url: session.url };
+  }
+
+  /** Admin: payments + invoices CSV for reconciliation (§5.12 商业/对账). */
+  @Get('admin/export')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @UseGuards(AuthGuard)
+  async exportPayments(
+    @CurrentUser() user: AccessTokenPayload,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    if (!['admin', 'super_admin', 'compliance'].includes(user.role)) throw new ForbiddenException();
+    const rows = await this.prisma.payment.findMany({
+      where: {
+        createdAt: {
+          gte: from ? new Date(from) : new Date(0),
+          lte: to ? new Date(to) : new Date(),
+        },
+      },
+      include: { invoice: { select: { number: true, status: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 10_000,
+    });
+    await this.prisma.auditLog.create({
+      data: { actorId: user.sub, action: 'billing.export', subject: 'payments' },
+    });
+    const esc = (v: string | null | undefined) => `"${(v ?? '').replaceAll('"', '""')}"`;
+    return [
+      'payment_id,kind,status,amount_minor,currency,invoice_number,invoice_status,created_at',
+      ...rows.map((p) =>
+        [
+          p.id,
+          p.kind,
+          p.status,
+          String(p.amountMinor),
+          p.currency,
+          esc(p.invoice?.number),
+          esc(p.invoice?.status),
+          p.createdAt.toISOString(),
+        ].join(','),
+      ),
+    ].join('\n');
   }
   @Post('refund')
   @UseGuards(AuthGuard)
@@ -214,15 +479,48 @@ export class BillingController {
             data: { status: 'paid', sessionId: session.id },
           });
           if (result.count) {
-            await tx.$queryRaw`SELECT id FROM listings WHERE id = ${payment.listingId}::uuid FOR UPDATE`;
-            const listing = await tx.listing.findUnique({ where: { id: payment.listingId } });
-            if (!listing) throw new NotFoundException();
-            const until = new Date(
-              Math.max(Date.now(), listing.promotedUntil?.getTime() ?? 0) + 7 * 86400000,
-            );
-            await tx.listing.update({
-              where: { id: listing.id },
-              data: { promotedUntil: until, version: { increment: 1 } },
+            if (payment.kind === 'promotion' && payment.listingId) {
+              await tx.$queryRaw`SELECT id FROM listings WHERE id = ${payment.listingId}::uuid FOR UPDATE`;
+              const listing = await tx.listing.findUnique({ where: { id: payment.listingId } });
+              if (!listing) throw new NotFoundException();
+              const until = new Date(
+                Math.max(Date.now(), listing.promotedUntil?.getTime() ?? 0) + 7 * 86400000,
+              );
+              await tx.listing.update({
+                where: { id: listing.id },
+                data: { promotedUntil: until, version: { increment: 1 } },
+              });
+            } else if (payment.kind === 'subscription' || payment.kind === 'job_pack') {
+              const stripeSubId =
+                typeof session.subscription === 'string' ? session.subscription : null;
+              await tx.subscription.create({
+                data: {
+                  ownerId: payment.ownerId,
+                  kind: session.metadata?.kind ?? 'member_plus',
+                  businessId: session.metadata?.businessId || payment.businessId,
+                  stripeSubscriptionId: stripeSubId,
+                  credits: payment.kind === 'job_pack' ? JOB_PACK_CREDITS : 0,
+                  status: 'active',
+                },
+              });
+            } else if (payment.kind === 'ad' && payment.adCampaignId) {
+              await tx.adCampaign.updateMany({
+                where: { id: payment.adCampaignId, status: 'draft' },
+                data: { status: 'active' },
+              });
+            }
+            // Every paid payment gets an invoice record (§9 发票).
+            const invoiceNo = `INV-${new Date().toISOString().slice(0, 7).replace('-', '')}-${payment.id.slice(0, 6).toUpperCase()}`;
+            await tx.invoice.upsert({
+              where: { paymentId: payment.id },
+              update: {},
+              create: {
+                paymentId: payment.id,
+                ownerId: payment.ownerId,
+                number: invoiceNo,
+                amountMinor: payment.amountMinor,
+                currency: payment.currency,
+              },
             });
             await tx.notification.create({
               data: { userId: payment.ownerId, kind: 'payment.paid', subjectId: id },
@@ -252,7 +550,7 @@ export class BillingController {
             data: { status: 'refunded' },
           });
           if (!changed.count) return;
-          if (payment.status === 'paid') {
+          if (payment.status === 'paid' && payment.kind === 'promotion' && payment.listingId) {
             await tx.$queryRaw`SELECT id FROM listings WHERE id = ${payment.listingId}::uuid FOR UPDATE`;
             const listing = await tx.listing.findUniqueOrThrow({
               where: { id: payment.listingId },
@@ -266,6 +564,10 @@ export class BillingController {
               },
             });
           }
+          await tx.invoice.updateMany({
+            where: { paymentId: id },
+            data: { status: 'refunded' },
+          });
           await tx.auditLog.create({
             data: {
               action: 'payment.refunded',

@@ -96,7 +96,7 @@ export default async function CommunityPage({
                   <div className="text-xs text-muted mt-0.5">
                     {[
                       boardName(boards.find((b) => b.slug === p.boardSlug) ?? boards[0]),
-                      p.author.displayName,
+                      p.author.anonymous ? t('anonymousName') : p.author.displayName,
                       cityName(p.city, loc),
                       formatDate(p.lastActiveAt, loc),
                     ]

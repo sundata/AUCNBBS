@@ -26,6 +26,36 @@ interface Article {
   status: string;
   updatedAt: string;
 }
+interface QueueListing {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  createdAt: string;
+  reviewNote: string | null;
+  owner: { id: string; displayName: string; role: string };
+  city: { slug: string; nameZh: string; nameEn: string };
+  _count: { media: number };
+}
+interface AppealDto {
+  id: string;
+  reference: string;
+  subjectType: string;
+  subjectId: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+  appellant: { id: string; displayName: string };
+  report: { id: string; reference: string; actionedById: string | null } | null;
+}
+interface ClaimDto {
+  id: string;
+  status: string;
+  evidence: string;
+  createdAt: string;
+  business: { id: string; nameZh: string; nameEn: string | null };
+  claimant: { id: string; displayName: string };
+}
 const blank = {
   slug: '',
   title: '',
@@ -41,6 +71,12 @@ export function AdminPanel() {
   const { me, loading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [queue, setQueue] = useState<QueueListing[]>([]);
+  const [appeals, setAppeals] = useState<AppealDto[]>([]);
+  const [claims, setClaims] = useState<ClaimDto[]>([]);
+  const [rejectReason, setRejectReason] = useState('');
+  const [appealNote, setAppealNote] = useState('');
+  const [claimNote, setClaimNote] = useState('');
   const [reportNext, setReportNext] = useState<string | null>(null);
   const [articleNext, setArticleNext] = useState<string | null>(null);
   const [filter, setFilter] = useState('open');
@@ -74,10 +110,33 @@ export function AdminPanel() {
     setArticles((rows) => (cursor ? [...rows, ...page.items] : page.items));
     setArticleNext(page.nextCursor);
   }, []);
+  const loadQueue = useCallback(async () => {
+    const page = await api<Page<QueueListing>>('/admin/listings?status=pending_review', {
+      token: await getAccessToken(),
+    });
+    setQueue(page.items);
+  }, []);
+  const loadAppeals = useCallback(async () => {
+    const page = await api<Page<AppealDto>>('/admin/appeals?status=open', {
+      token: await getAccessToken(),
+    });
+    setAppeals(page.items);
+  }, []);
+  const loadClaims = useCallback(async () => {
+    const page = await api<Page<ClaimDto>>('/admin/business-claims?status=pending', {
+      token: await getAccessToken(),
+    });
+    setClaims(page.items);
+  }, []);
   useEffect(() => {
-    if (review) void loadReports().catch(fail);
+    if (review) {
+      void loadReports().catch(fail);
+      void loadQueue().catch(fail);
+      void loadAppeals().catch(fail);
+      void loadClaims().catch(fail);
+    }
     if (edit) void loadArticles().catch(fail);
-  }, [review, edit, loadReports, loadArticles, fail]);
+  }, [review, edit, loadReports, loadArticles, loadQueue, loadAppeals, loadClaims, fail]);
   if (loading) return <p>{t('loading')}</p>;
   if (!me) return <Link href="/login?next=/admin">{t('login')}</Link>;
   if (!review && !edit) return <p>{t('forbidden')}</p>;
@@ -180,6 +239,172 @@ export function AdminPanel() {
             <button onClick={() => void loadReports(reportNext).catch(fail)}>{t('more')}</button>
           )}
           <p className="text-sm text-muted">{t('actionHint')}</p>
+        </section>
+      )}
+      {review && (
+        <section className="bg-white border rounded p-4 space-y-3">
+          <h2 className="font-bold">{t('queue')}</h2>
+          <label className="block">
+            {t('rejectReason')}
+            <input
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              maxLength={2000}
+              className="border rounded p-2 w-full"
+            />
+          </label>
+          {queue.length === 0 && <p>{t('empty')}</p>}
+          {queue.map((l) => (
+            <article key={l.id} className="border-t py-3 space-y-2">
+              <h3 className="font-medium">
+                {l.title} <span className="text-xs text-muted">({l.type})</span>
+              </h3>
+              <p className="text-sm text-muted">
+                {l.owner.displayName} · {l.city.nameZh} · {t('images', { count: l._count.media })}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  disabled={busy}
+                  className="border rounded px-3 py-1 disabled:opacity-40"
+                  onClick={() => {
+                    setBusy(true);
+                    void (async () => {
+                      await api(`/admin/listings/${l.id}/review`, {
+                        method: 'POST',
+                        token: await getAccessToken(),
+                        body: JSON.stringify({ decision: 'approve' }),
+                      });
+                      await loadQueue();
+                    })()
+                      .catch(fail)
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  {t('approve')}
+                </button>
+                <button
+                  disabled={busy || rejectReason.trim().length < 5}
+                  className="border rounded px-3 py-1 text-red-700 disabled:opacity-40"
+                  onClick={() => {
+                    setBusy(true);
+                    void (async () => {
+                      await api(`/admin/listings/${l.id}/review`, {
+                        method: 'POST',
+                        token: await getAccessToken(),
+                        body: JSON.stringify({ decision: 'reject', reason: rejectReason }),
+                      });
+                      setRejectReason('');
+                      await loadQueue();
+                    })()
+                      .catch(fail)
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  {t('reject')}
+                </button>
+              </div>
+            </article>
+          ))}
+          <p className="text-sm text-muted">{t('queueHint')}</p>
+        </section>
+      )}
+      {review && (
+        <section className="bg-white border rounded p-4 space-y-3">
+          <h2 className="font-bold">{t('appeals')}</h2>
+          <label className="block">
+            {t('appealNote')}
+            <input
+              value={appealNote}
+              onChange={(e) => setAppealNote(e.target.value)}
+              maxLength={2000}
+              className="border rounded p-2 w-full"
+            />
+          </label>
+          {appeals.length === 0 && <p>{t('empty')}</p>}
+          {appeals.map((a) => (
+            <article key={a.id} className="border-t py-3 space-y-2">
+              <h3 className="font-medium">
+                {a.reference} · {a.subjectType} · {a.appellant.displayName}
+              </h3>
+              <p className="text-sm whitespace-pre-wrap">{a.reason}</p>
+              <div className="flex gap-3">
+                {(['upheld', 'overturned'] as const).map((decision) => (
+                  <button
+                    key={decision}
+                    disabled={busy || appealNote.trim().length < 5}
+                    className="border rounded px-3 py-1 disabled:opacity-40"
+                    onClick={() => {
+                      setBusy(true);
+                      void (async () => {
+                        await api(`/admin/appeals/${a.id}`, {
+                          method: 'PATCH',
+                          token: await getAccessToken(),
+                          body: JSON.stringify({ decision, note: appealNote }),
+                        });
+                        setAppealNote('');
+                        await loadAppeals();
+                      })()
+                        .catch(fail)
+                        .finally(() => setBusy(false));
+                    }}
+                  >
+                    {t(`appeal.${decision}`)}
+                  </button>
+                ))}
+              </div>
+            </article>
+          ))}
+          <p className="text-sm text-muted">{t('appealHint')}</p>
+        </section>
+      )}
+      {review && (
+        <section className="bg-white border rounded p-4 space-y-3">
+          <h2 className="font-bold">{t('claims')}</h2>
+          <label className="block">
+            {t('claimNote')}
+            <input
+              value={claimNote}
+              onChange={(e) => setClaimNote(e.target.value)}
+              maxLength={2000}
+              className="border rounded p-2 w-full"
+            />
+          </label>
+          {claims.length === 0 && <p>{t('empty')}</p>}
+          {claims.map((c) => (
+            <article key={c.id} className="border-t py-3 space-y-2">
+              <h3 className="font-medium">
+                {c.business.nameZh}
+                {c.business.nameEn ? ` · ${c.business.nameEn}` : ''}
+              </h3>
+              <p className="text-sm text-muted">{c.claimant.displayName}</p>
+              <p className="text-sm whitespace-pre-wrap">{c.evidence}</p>
+              <div className="flex gap-3">
+                {(['approved', 'rejected'] as const).map((decision) => (
+                  <button
+                    key={decision}
+                    disabled={busy}
+                    className="border rounded px-3 py-1 disabled:opacity-40"
+                    onClick={() => {
+                      setBusy(true);
+                      void (async () => {
+                        await api(`/admin/business-claims/${c.id}`, {
+                          method: 'PATCH',
+                          token: await getAccessToken(),
+                          body: JSON.stringify({ decision, note: claimNote || undefined }),
+                        });
+                        setClaimNote('');
+                        await loadClaims();
+                      })()
+                        .catch(fail)
+                        .finally(() => setBusy(false));
+                    }}
+                  >
+                    {t(`claim.${decision}`)}
+                  </button>
+                ))}
+              </div>
+            </article>
+          ))}
         </section>
       )}
       {edit && (

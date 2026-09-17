@@ -4,6 +4,7 @@ import { api, qs, type HomeFeed } from '@/lib/api';
 import { cityName, formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { ListingCard } from '@/components/listing-card';
+import { AdSlot } from '@/components/ad-slot';
 import { Empty, Section } from '@/components/section';
 
 export default async function HomePage({
@@ -26,13 +27,30 @@ export default async function HomePage({
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <Link
+        href="/weekend"
+        className="block rounded-2xl border border-line bg-white p-5 hover:border-brand"
+      >
+        <span className="text-sm text-brand">SYDNEY · WEEKENDS</span>
+        <h2 className="mt-2 text-2xl font-semibold text-navy">
+          {loc === 'zh' ? '悉尼这周末，去哪儿？ →' : 'Your Sydney weekend starts here →'}
+        </h2>
+        <p className="mt-2 text-muted">
+          {loc === 'zh'
+            ? '找免费、亲子和室内活动，收藏心仪去处。'
+            : 'Find free, family-friendly and indoor events. Save your favourites.'}
+        </p>
+      </Link>
       <div className="relative overflow-hidden rounded-3xl bg-navy px-5 py-7 sm:px-8 sm:py-9 text-white shadow-[0_14px_36px_rgba(18,48,74,0.18)]">
         <div className="relative max-w-2xl">
           <p className="text-xs uppercase tracking-[0.18em] text-white/60 mb-2">AUCN Hub</p>
-          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">{city ? cityName(city, loc) : t('cityHint')}</h1>
+          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">
+            {city ? cityName(city, loc) : t('cityHint')}
+          </h1>
           <p className="mt-2 text-sm sm:text-base text-white/75">{t('tagline')}</p>
         </div>
       </div>
+      <AdSlot placement="home" cityId={city?.id} label={t('sponsored')} />
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Section title={t('headlines')} href="/news" more={t('more')}>

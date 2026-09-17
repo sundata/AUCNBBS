@@ -15,6 +15,17 @@ export function formatDate(iso: string | null | undefined, locale: AppLocale): s
   });
 }
 
+export function formatDateTime(iso: string | null | undefined, locale: AppLocale): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-AU', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function cityName(
   city: { nameZh: string; nameEn: string } | null | undefined,
   locale: AppLocale,

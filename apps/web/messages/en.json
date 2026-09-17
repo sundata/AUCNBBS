@@ -3,7 +3,9 @@
     "name": "AUCN Hub",
     "tagline": "News, community and local classifieds for Chinese Australians",
     "disclaimer": "Content is posted by users or curated by the community. Anything about visas, law, tax, health or finance is general information only, not professional advice. The platform is not a party to any transaction and does not hold funds.",
-    "footer": "© {year} AUCN Hub · Public beta"
+    "footer": "© {year} AUCN Hub · Public beta",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use"
   },
   "nav": {
     "home": "Home",
@@ -21,7 +23,10 @@
     "switchLocale": "中文",
     "allCities": "All Australia",
     "messages": "Messages",
-    "admin": "Admin"
+    "admin": "Admin",
+    "weekend": "Weekends",
+    "businesses": "Businesses",
+    "events": "Events"
   },
   "home": {
     "headlines": "Headlines",
@@ -32,7 +37,8 @@
     "services": "Local services",
     "more": "More",
     "cityHint": "Pick a city for local listings",
-    "empty": "Nothing here yet"
+    "empty": "Nothing here yet",
+    "sponsored": "Sponsored"
   },
   "listing": {
     "type": {
@@ -111,7 +117,22 @@
     "loginEdit": "Sign in to edit",
     "notOwner": "Only the owner can edit",
     "billing": "Promotion & orders",
-    "promoted": "Promoted"
+    "promoted": "Promoted",
+    "rejectNote": "Rejection reason",
+    "submitReview": "Submit for review",
+    "withdraw": "Withdraw",
+    "priceMin": "Min price",
+    "priceMax": "Max price",
+    "suburb": "Suburb",
+    "bedrooms": "Beds ≥",
+    "sort": "Sort",
+    "sortLatest": "Latest",
+    "sortPriceAsc": "Price ↑",
+    "sortPriceDesc": "Price ↓",
+    "apply": "Apply",
+    "revealPhone": "Show phone",
+    "phoneLogin": "Sign in to see phone",
+    "phoneError": "Phone unavailable"
   },
   "housing": {
     "kind": {
@@ -186,7 +207,31 @@
     "replyPlaceholder": "Write a reply…",
     "loginToReply": "Log in to join the discussion",
     "noComments": "No replies yet — start the conversation.",
-    "notFound": "This post is unavailable"
+    "notFound": "This post is unavailable",
+    "anonymousName": "Anonymous",
+    "edited": "edited",
+    "locked": "locked",
+    "lockedHint": "This post is locked.",
+    "pollTitle": "Poll · {count} votes",
+    "pollClosed": "(closed)",
+    "vote": "Vote",
+    "loginToVote": "Sign in to vote",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "modTools": "Moderator tools",
+    "accepted": "Accepted",
+    "accept": "Accept answer",
+    "unaccept": "Unaccept",
+    "error": "Action failed",
+    "mod": {
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "slowmode": "Slow mode",
+      "slowmodeSec": "sec/msg"
+    }
   },
   "news": {
     "title": "News",
@@ -210,13 +255,27 @@
       "all": "All",
       "listings": "Classifieds",
       "posts": "Posts",
-      "articles": "News"
+      "articles": "News",
+      "businesses": "Businesses",
+      "events": "Events"
     },
     "kind": {
       "listing": "Listing",
       "post": "Post",
-      "article": "News"
-    }
+      "article": "News",
+      "business": "Business",
+      "event": "Event"
+    },
+    "saveSearch": "Save this search",
+    "saveConfirm": "Save",
+    "savedSearchDone": "Saved — manage it under Me",
+    "cadence": {
+      "instant": "Instant",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "off": "Saved only"
+    },
+    "sponsored": "Sponsored"
   },
   "auth": {
     "title": "Log in with email",
@@ -233,7 +292,10 @@
     "required": "Please log in first",
     "continueWith": "Continue with {provider}",
     "phone": "Phone (including country code)",
-    "verifying": "Verifying sign-in…"
+    "verifying": "Verifying sign-in…",
+    "mfaCode": "Authenticator code",
+    "mfaVerify": "Verify & sign in",
+    "continueWithPasskey": "Sign in with a passkey"
   },
   "post": {
     "title": "Post a listing",
@@ -278,7 +340,7 @@
     "board": "Board",
     "postType": "Post type",
     "discussion": "Discussion",
-    "question": "Question",
+    "question": "Q&A",
     "anonymous": "Post anonymously",
     "validation": "Please check: {fields}",
     "propertyTypes": {
@@ -346,7 +408,13 @@
       "in_app": "In-app",
       "phone_on_request": "Phone on request",
       "public": "Public in description"
-    }
+    },
+    "poll": "Poll",
+    "pollOptions": "Poll options",
+    "pollOption": "Option {n}",
+    "pollAddOption": "+ Add option",
+    "pollMulti": "Allow multiple choices",
+    "contactPhone": "Contact phone"
   },
   "report": {
     "title": "Report",
@@ -376,7 +444,26 @@
     "displayName": "Display name",
     "save": "Save",
     "saved": "Saved",
-    "myListings": "My listings"
+    "myListings": "My listings",
+    "favorites": "Saved items",
+    "noFavorites": "Nothing saved yet",
+    "favType": {
+      "listing": "Listing",
+      "post": "Post",
+      "article": "News",
+      "business": "Business",
+      "event": "Event"
+    },
+    "savedSearches": "Saved searches",
+    "noSavedSearches": "No saved searches",
+    "savedSearchHint": "Save a keyword from the search page to get alerts.",
+    "cadence": {
+      "instant": "Instant",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "off": "No alerts"
+    },
+    "loadMore": "Load more"
   },
   "common": {
     "loading": "Loading…",
@@ -385,7 +472,8 @@
     "back": "Back",
     "cancel": "Cancel",
     "close": "Close",
-    "optional": "optional"
+    "optional": "optional",
+    "delete": "Delete"
   },
   "messages": {
     "title": "Messages",
@@ -404,7 +492,31 @@
     "reportUpdate": "Report status updated",
     "contact": "Contact owner",
     "paymentUpdate": "Payment confirmed; promotion activated",
-    "markRead": "Mark read"
+    "markRead": "Mark read",
+    "kind": {
+      "listingApproved": "Your listing passed review and is now live",
+      "listingRejected": "Your listing was rejected — see the reason under Me and resubmit",
+      "moderationActioned": "Your content was actioned; you can appeal from the content page",
+      "appealUpheld": "Your appeal was reviewed and the decision stands",
+      "appealOverturned": "Your appeal succeeded and the content was restored",
+      "claimApproved": "Your business claim was approved — you can now manage the page",
+      "claimRejected": "Your business claim was declined",
+      "eventRsvp": "Someone registered for your event",
+      "eventPromoted": "You were promoted from the waitlist",
+      "eventCancelled": "An event you registered for was cancelled",
+      "eventReminder": "Event starting soon",
+      "savedSearchAlert": "New results for a saved search"
+    },
+    "requestTag": "request",
+    "requestPrompt": "This member wants to contact you. Accept to continue.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "declined": "This message request was declined.",
+    "blockUser": "Block {name}",
+    "recalled": "Message recalled",
+    "recall": "Recall",
+    "linkWarning": "Contains an external link — beware of scams.",
+    "masked": "Sensitive details were masked."
   },
   "admin": {
     "title": "Administration",
@@ -438,7 +550,26 @@
     "save": "Save article",
     "saved": "Saved",
     "error": "Operation failed",
-    "articleTitle": "Article title"
+    "articleTitle": "Article title",
+    "queue": "Listing review queue",
+    "rejectReason": "Rejection reason (required when rejecting, 5+ chars)",
+    "approve": "Approve & publish",
+    "reject": "Reject",
+    "images": "{count} photos",
+    "queueHint": "Approval publishes the listing; rejection notifies the owner who can edit and resubmit.",
+    "appeals": "Appeals",
+    "appealNote": "Review note (at least 5 characters)",
+    "appeal": {
+      "upheld": "Uphold decision",
+      "overturned": "Overturn & restore"
+    },
+    "appealHint": "The original moderator cannot decide their own appeal; overturning restores removed content.",
+    "claims": "Business claims",
+    "claimNote": "Review note (optional)",
+    "claim": {
+      "approved": "Approve claim",
+      "rejected": "Decline"
+    }
   },
   "media": {
     "title": "Photos",
@@ -469,5 +600,297 @@
     "refund": "Request full refund",
     "paymentId": "Payment ID",
     "reason": "Refund reason"
+  },
+  "favorite": {
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "appeal": {
+    "open": "Appeal this decision",
+    "placeholder": "Explain why the decision is wrong (at least 10 characters). A different moderator will review it.",
+    "submit": "Submit appeal",
+    "sent": "Appeal submitted — you will be notified of the outcome."
+  },
+  "onboarding": {
+    "title": "Set up your profile",
+    "subtitle": "Tell us your city and what you care about — the feed adapts to you. Everything is skippable.",
+    "name": "Display name",
+    "city": "Your city",
+    "skipCity": "Skip for now",
+    "interests": "Interested in",
+    "interest": {
+      "housing": "Housing",
+      "jobs": "Jobs",
+      "market": "Marketplace",
+      "services": "Services",
+      "community": "Community",
+      "news": "News",
+      "events": "Events",
+      "businesses": "Businesses"
+    },
+    "finish": "Done",
+    "skip": "Skip for now",
+    "login": "Please log in first",
+    "birthYear": "Birth year (optional)",
+    "birthYearHint": "Required for age-restricted categories"
+  },
+  "account": {
+    "securityTitle": "Privacy & security",
+    "avatar": "Avatar",
+    "changeAvatar": "Change avatar",
+    "sessions": "Signed-in devices",
+    "unknownDevice": "Unknown device",
+    "currentSession": "This device",
+    "revoke": "Sign out",
+    "export": "Export my data (JSON)",
+    "deleteAccount": "Delete account",
+    "deleteConfirm": "Deletion has a 7-day cooling-off period — you can cancel here while it is active. Afterwards the account is anonymised and cannot be recovered.",
+    "deleteConfirmButton": "Confirm deletion",
+    "deletionRequested": "Deletion is in its cooling-off period; the account will be anonymised afterwards.",
+    "deletionPending": "Account deletion cooling-off in progress (since {date}).",
+    "cancelDeletion": "Cancel deletion",
+    "extrasTitle": "Security & preferences",
+    "mfaTitle": "Two-factor (TOTP)",
+    "mfaOn": "Enabled",
+    "mfaDisable": "Disable",
+    "mfaDisablePrompt": "Enter your current Authenticator code to disable",
+    "mfaScanHint": "Scan with your authenticator app or copy this URI:",
+    "mfaSecret": "Secret",
+    "mfaEnable": "Enable",
+    "mfaSetup": "Set up two-factor",
+    "mfaEnabled": "Two-factor enabled",
+    "prefsTitle": "Notification preferences",
+    "prefsSave": "Save preferences",
+    "prefsSaved": "Saved",
+    "blockedTitle": "Blocked users",
+    "unblock": "Unblock",
+    "invoicesTitle": "Invoices",
+    "pref": {
+      "interactions": "Interactions",
+      "transactions": "Transactions",
+      "system": "System",
+      "marketing": "Marketing",
+      "marketingOptOut": "Opt out of marketing email",
+      "personalizationOff": "Disable personalised feed"
+    },
+    "passkeyTitle": "Passkeys",
+    "passkeyAdd": "Add a passkey",
+    "passkeyAdded": "Passkey added",
+    "pushTitle": "Push notifications",
+    "pushEnable": "Enable push notifications on this device"
+  },
+  "businesses": {
+    "title": "Business directory",
+    "add": "List a business",
+    "addTitle": "List a new business",
+    "searchPlaceholder": "Search businesses",
+    "allCategories": "All categories",
+    "filter": "Filter",
+    "empty": "No businesses yet — list the first one.",
+    "more": "Load more",
+    "claimed": "Claimed",
+    "reviews": "{count} reviews",
+    "noReviews": "No reviews yet",
+    "location": "Location",
+    "hours": "Hours",
+    "priceRange": "Price range",
+    "phone": "Phone",
+    "website": "Website",
+    "claim": "Claim this business",
+    "claimPlaceholder": "Provide claim evidence (registered email, phone or ABN proof). An admin will verify it before granting access.",
+    "claimSubmit": "Submit claim",
+    "claimSent": "Claim submitted — pending admin review.",
+    "rating": "Rating",
+    "reviewPlaceholder": "Share your honest experience…",
+    "reviewSubmit": "Post review",
+    "loginToReview": "Log in to write a review",
+    "ownerReply": "Owner reply",
+    "reply": "Reply",
+    "replySubmit": "Post reply",
+    "submit": "Submit",
+    "category": {
+      "restaurant": "Restaurant",
+      "moving": "Moving",
+      "cleaning": "Cleaning",
+      "repair": "Repairs",
+      "accounting": "Accounting",
+      "legal": "Legal",
+      "real_estate": "Real estate",
+      "education": "Education",
+      "beauty": "Beauty",
+      "automotive": "Automotive",
+      "travel": "Travel",
+      "healthcare": "Healthcare",
+      "other": "Other"
+    },
+    "form": {
+      "nameZh": "Chinese name",
+      "nameEn": "English name",
+      "category": "Category",
+      "description": "Description",
+      "suburb": "Suburb",
+      "city": "City",
+      "address": "Address",
+      "phone": "Phone",
+      "website": "Website",
+      "hours": "Opening hours",
+      "priceRange": "Price range"
+    },
+    "locations": "Locations",
+    "primary": "Primary",
+    "offers": "Offers",
+    "offerEnds": "Ends {date}",
+    "contactBusiness": "Contact business",
+    "leadName": "Your name",
+    "leadContact": "Contact (phone/email/WeChat)",
+    "leadMessage": "What would you like to ask?",
+    "leadSent": "Sent to the business",
+    "send": "Send",
+    "leadsTitle": "Lead inbox",
+    "viewLeads": "View leads",
+    "exportCsv": "Export CSV",
+    "noLeads": "No leads yet",
+    "markContacted": "Mark contacted",
+    "error": "Action failed"
+  },
+  "events": {
+    "title": "Events",
+    "add": "Host an event",
+    "addTitle": "Host a new event",
+    "allCategories": "All categories",
+    "filter": "Filter",
+    "empty": "No upcoming events — host one.",
+    "more": "Load more",
+    "online": "Online",
+    "free": "Free",
+    "going": "{count} going",
+    "when": "When",
+    "where": "Where",
+    "organizer": "Organiser",
+    "price": "Price",
+    "capacity": "Capacity",
+    "unlimited": "Unlimited",
+    "rsvp": "Register",
+    "cancelRsvp": "Cancel registration",
+    "leaveWaitlist": "Leave waitlist",
+    "rsvpState": {
+      "going": "Registered",
+      "waitlist": "Waitlisted"
+    },
+    "cancelled": "Cancelled",
+    "cancelEvent": "Cancel event",
+    "ticketing": "Tickets / registration",
+    "ics": "Add to calendar (.ics)",
+    "submit": "Publish",
+    "category": {
+      "community": "Community",
+      "food": "Food & drink",
+      "sports": "Sports",
+      "arts": "Arts",
+      "education": "Education",
+      "career": "Career",
+      "family": "Family",
+      "online": "Online",
+      "other": "Other"
+    },
+    "form": {
+      "title": "Event name",
+      "body": "Details",
+      "category": "Category",
+      "city": "City",
+      "venue": "Venue",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "capacity": "Capacity limit",
+      "price": "Price (AUD, blank = free)",
+      "externalUrl": "External ticketing link"
+    },
+    "recurrence": {
+      "weekly": "Weekly",
+      "fortnightly": "Fortnightly",
+      "monthly": "Monthly"
+    },
+    "checkinCode": "Check-in code",
+    "checkedIn": "Checked in ✓"
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "updated": "Last updated: 13 Sep 2026",
+    "intro": "This policy explains how AUCN Hub collects, uses and protects your personal information.",
+    "sections": {
+      "collect": {
+        "title": "What we collect",
+        "body": "Account data (email or third-party sign-in identifier, display name, city, avatar); content you publish (posts, classifieds, reviews, events, direct messages); usage data (views, searches, signed-in devices). Payments are processed by Stripe — we never store card numbers."
+      },
+      "use": {
+        "title": "How we use it",
+        "body": "To provide sign-in, publishing, messaging, moderation and safety, paid benefits, and to meet legal obligations. We do not sell personal information or message content."
+      },
+      "share": {
+        "title": "Sharing",
+        "body": "Content you publish publicly is visible to visitors; direct messages are only visible to the participants; payment details are shared only with Stripe; disclosures may be made where the law requires."
+      },
+      "storage": {
+        "title": "Storage & security",
+        "body": "Data is stored on databases in Australia; transport uses TLS; secrets and tokens are stored as hashes. We retain operational and safety data for a reasonable period."
+      },
+      "rights": {
+        "title": "Your rights",
+        "body": "Under Me you can export your data, manage signed-in devices and request account deletion (cancelable during the 7-day cooling-off period). Contact us to correct or delete information."
+      },
+      "cookies": {
+        "title": "Cookies",
+        "body": "This site uses only the minimal cookies/local storage needed for sessions and preferences — no third-party advertising trackers."
+      },
+      "contact": {
+        "title": "Contact us",
+        "body": "For privacy questions, reach us through the support channels on the contact page."
+      }
+    }
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updated": "Last updated: 13 Sep 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance",
+        "body": "By using this platform you accept these terms and the community guidelines. The platform serves local life in Australia; content is published by users."
+      },
+      "accounts": {
+        "title": "Accounts",
+        "body": "You are responsible for activity under your account. False information, impersonation or bypassing security measures can lead to restrictions."
+      },
+      "content": {
+        "title": "Your content",
+        "body": "You keep the rights to what you publish and grant us the licence needed to display it. You must ensure it is truthful, lawful and does not infringe others' rights."
+      },
+      "prohibited": {
+        "title": "Prohibited conduct",
+        "body": "No scams, discrimination, harassment, illegal goods, privacy violations, spam or dangerous or misleading content. Housing and job ads must comply with Australian law."
+      },
+      "moderation": {
+        "title": "Moderation",
+        "body": "We may review, remove or restrict content and accounts. You can appeal a decision — a different moderator reviews appeals."
+      },
+      "paid": {
+        "title": "Paid services",
+        "body": "Paid services such as promotions are billed via Stripe; prices are shown on the page and refunds follow the stated policy. Payment never changes moderation standards."
+      },
+      "liability": {
+        "title": "Liability",
+        "body": "We are not a party to transactions between users, do not hold funds and do not guarantee the accuracy of user content. Verify details yourself and stay safe when meeting."
+      },
+      "changes": {
+        "title": "Changes",
+        "body": "Updates to these terms are published on this page; continued use means acceptance of the new version."
+      }
+    }
+  },
+  "profile": {
+    "memberSince": "Joined {date}",
+    "postCount": "{count} posts",
+    "listings": "Active listings",
+    "follow": "Follow",
+    "unfollow": "Unfollow"
   }
 }

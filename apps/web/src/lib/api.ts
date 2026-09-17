@@ -31,6 +31,7 @@ export interface ListingDetail extends ListingSummary {
   owner: { id: string; displayName: string; memberSince: string };
   details: Record<string, unknown>;
   viewCount: number;
+  reviewNote: string | null;
 }
 export interface ArticleSummary {
   id: string;
@@ -55,17 +56,25 @@ export interface BoardDto {
   descriptionEn: string;
   postCount: number;
 }
+export interface AuthorDto {
+  id: string | null;
+  displayName: string | null;
+  anonymous: boolean;
+}
 export interface PostSummary {
   id: string;
   boardSlug: string;
   type: string;
   title: string;
   anonymous: boolean;
-  author: { id: string | null; displayName: string };
+  author: AuthorDto;
   city: { id: string; slug: string; nameZh: string; nameEn: string } | null;
   commentCount: number;
   viewCount: number;
   pinned: boolean;
+  locked: boolean;
+  edited: boolean;
+  hasPoll: boolean;
   lastActiveAt: string;
   createdAt: string;
 }
@@ -73,11 +82,25 @@ export interface CommentDto {
   id: string;
   parentId: string | null;
   body: string;
-  author: { id: string; displayName: string };
+  author: AuthorDto;
+  edited: boolean;
+  accepted: boolean;
   createdAt: string;
+}
+export interface PollDto {
+  multi: boolean;
+  closesAt: string | null;
+  closed: boolean;
+  totalVotes: number;
+  myOptionIds: string[];
+  options: { id: string; label: string; votes: number }[];
 }
 export interface PostDetail extends PostSummary {
   body: string;
+  slowmodeSec: number;
+  acceptedCommentId: string | null;
+  viewerIsAuthor: boolean;
+  poll: PollDto | null;
   comments: CommentDto[];
 }
 export interface HomeFeed {
@@ -97,7 +120,7 @@ export interface Page<T> {
   nextCursor: string | null;
 }
 export interface SearchHit {
-  kind: 'listing' | 'post' | 'article';
+  kind: 'listing' | 'post' | 'article' | 'business' | 'event';
   id: string;
   title: string;
   snippet: string;
@@ -109,6 +132,113 @@ export interface SearchResult {
   q: string;
   hits: SearchHit[];
   total: number;
+}
+export interface SessionDto {
+  id: string;
+  userAgent: string | null;
+  createdAt: string;
+  expiresAt: string;
+  current: boolean;
+}
+export interface FavoriteDto {
+  id: string;
+  subjectType: string;
+  subjectId: string;
+  title: string | null;
+  subjectMeta: string | null;
+  createdAt: string;
+}
+export interface SavedSearchDto {
+  id: string;
+  name: string;
+  query: string;
+  cadence: string;
+  createdAt: string;
+}
+export interface BusinessSummary {
+  id: string;
+  slug: string;
+  nameZh: string;
+  nameEn: string | null;
+  category: string;
+  suburb: string;
+  city: { id: string; slug: string; nameZh: string; nameEn: string } | null;
+  claimed: boolean;
+  reviewCount: number;
+}
+export interface BusinessLocationDto {
+  id: string;
+  label: string;
+  suburb: string;
+  address: string | null;
+  phone: string | null;
+  isPrimary: boolean;
+}
+export interface OfferDto {
+  id: string;
+  title: string;
+  body: string;
+  startsAt: string;
+  endsAt: string;
+}
+export interface BusinessLeadDto {
+  id: string;
+  name: string;
+  contact: string;
+  message: string;
+  source: string;
+  status: string;
+  createdAt: string;
+}
+export interface BusinessDetail extends Omit<BusinessSummary, 'reviewCount'> {
+  locations: BusinessLocationDto[];
+  offers: OfferDto[];
+  descriptionZh: string;
+  descriptionEn: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  abn: string | null;
+  openingHours: string | null;
+  priceRange: string | null;
+  status: string;
+  owner: { id: string; displayName: string } | null;
+  ratingAvg: number | null;
+  reviewCount: number;
+  viewerIsOwner: boolean;
+}
+export interface BusinessReviewDto {
+  id: string;
+  rating: number;
+  body: string;
+  reply: string | null;
+  createdAt: string;
+  author: { id: string; displayName: string };
+}
+export interface EventSummary {
+  id: string;
+  title: string;
+  category: string;
+  online: boolean;
+  venue: string | null;
+  startsAt: string;
+  endsAt: string;
+  capacity: number | null;
+  priceMinor: number | null;
+  goingCount: number;
+  city: { id: string; slug: string; nameZh: string; nameEn: string };
+  organizer: { id: string; displayName: string };
+}
+export interface EventDetail extends EventSummary {
+  body: string;
+  externalUrl: string | null;
+  status: string;
+  viewerRsvp: string | null;
+  viewerIsOrganizer: boolean;
+  checkinCode: string | null;
+  checkedInAt: string | null;
+  recurrence: string | null;
+  reminderSentAt: string | null;
 }
 export interface ProblemDetails {
   title: string;
@@ -143,7 +273,22 @@ export async function api<T>(
   headers.set('accept', 'application/json');
   if (rest.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
   if (token) headers.set('authorization', `Bearer ${token}`);
-  const res = await fetch(`${apiBase()}/api/v1${path}`, { ...rest, headers, cache: 'no-store' });
+  // CSRF double-submit: cookie-authenticated mutations must echo the
+  // readable aucn_csrf cookie in x-csrf-token.
+  if (typeof document !== 'undefined' && (rest.method ?? 'GET') !== 'GET') {
+    const csrf = document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('aucn_csrf='))
+      ?.split('=')[1];
+    if (csrf) headers.set('x-csrf-token', decodeURIComponent(csrf));
+  }
+  // credentials:'include' lets the browser carry httpOnly session cookies (W-1).
+  const res = await fetch(`${apiBase()}/api/v1${path}`, {
+    ...rest,
+    headers,
+    cache: 'no-store',
+    credentials: 'include',
+  });
   if (!res.ok) {
     let problem: ProblemDetails = { title: res.statusText, status: res.status };
     try {

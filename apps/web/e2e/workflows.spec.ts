@@ -1,14 +1,16 @@
 import { test, expect, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { testDatabase, fixture, challenge, testImage } from '../../api/test/fixtures';
+import { totpCode } from '../../api/src/common/totp';
 const prisma = testDatabase();
+const STAFF_TOTP = 'JBSWY3DPEHPK3PXP';
 const api = process.env.TEST_API_URL ?? 'http://localhost:4100';
 let owner: Awaited<ReturnType<typeof fixture>>,
   buyer: Awaited<ReturnType<typeof fixture>>,
   editor: Awaited<ReturnType<typeof fixture>>;
 let cityId = '',
   listingId = '';
-async function login(page: Page, email: string) {
+async function login(page: Page, email: string, mfaSecret?: string) {
   await challenge(prisma, email);
   await page.goto('/en/login');
   await page.getByLabel('Email', { exact: true }).fill(email);
@@ -18,6 +20,11 @@ async function login(page: Page, email: string) {
   await challenge(prisma, email);
   await page.getByLabel('Code', { exact: true }).fill('123456');
   await page.getByRole('button', { name: 'Log in', exact: true }).click();
+  if (mfaSecret) {
+    // Staff accounts land on the TOTP challenge before tokens are issued.
+    await page.getByLabel('Authenticator code', { exact: true }).fill(totpCode(mfaSecret));
+    await page.getByRole('button', { name: 'Verify & sign in', exact: true }).click();
+  }
   await expect(page).toHaveURL(/\/en$/);
   await page.goto('/en/me');
   await expect(page.getByRole('heading', { name: 'Me', exact: true })).toBeVisible();
@@ -26,6 +33,11 @@ test.beforeAll(async () => {
   owner = await fixture(prisma);
   buyer = await fixture(prisma);
   editor = await fixture(prisma, 'editor');
+  // StaffMfaGuard requires enrolled TOTP on staff surfaces.
+  await prisma.user.update({
+    where: { id: editor.id },
+    data: { totpSecret: STAFF_TOTP, totpEnabledAt: new Date() },
+  });
   cityId = (
     await prisma.city.create({
       data: {
@@ -70,6 +82,8 @@ test.afterAll(async () => {
   await prisma.listing.deleteMany({ where: { ownerId: { in: ids } } });
   await prisma.article.deleteMany({ where: { authorId: { in: ids } } });
   await prisma.auditLog.deleteMany({ where: { actorId: { in: ids } } });
+  await prisma.mfaChallenge.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.session.deleteMany({ where: { userId: { in: ids } } });
   await prisma.otpChallenge.deleteMany({
     where: { email: { in: [owner, buyer, editor].filter(Boolean).map((u) => u.email) } },
   });
@@ -115,7 +129,7 @@ test('CMS creates an article and ordinary users cannot enter admin', async ({ pa
   await login(page, owner.email);
   await page.goto('/en/admin');
   await expect(page.getByText('Your account does not have access')).toBeVisible();
-  await login(page, editor.email);
+  await login(page, editor.email, STAFF_TOTP);
   await page.goto('/en/admin');
   await page.getByLabel('URL slug (lowercase letters and hyphens)').fill(`browser-${randomUUID()}`);
   await page.getByLabel('Summary', { exact: true }).fill('A browser authored article summary.');

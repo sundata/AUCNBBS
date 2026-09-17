@@ -7,6 +7,7 @@ import { routing } from '@/i18n/routing';
 import { api, type CityDto } from '@/lib/api';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { siteUrl } from '@/lib/site';
 import '../globals.css';
 
 export const dynamic = 'force-dynamic';
@@ -23,8 +24,10 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'site' });
   return {
+    metadataBase: new URL(siteUrl()),
     title: { default: t('name'), template: `%s · ${t('name')}` },
     description: t('tagline'),
+    openGraph: { siteName: t('name'), locale: locale === 'zh' ? 'zh_CN' : 'en_AU' },
   };
 }
 

@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
-import { UsersController } from './users.controller';
+import { PublicUsersController, UsersController } from './users.controller';
+import { UsersDeletionWorker } from './users-deletion.worker';
+import { NotificationsWorker } from './notifications.worker';
 
-@Module({ imports: [AuthModule], controllers: [UsersController] })
+@Module({
+  imports: [AuthModule],
+  controllers: [UsersController, PublicUsersController],
+  providers: [UsersDeletionWorker, NotificationsWorker],
+})
 export class UsersModule {}

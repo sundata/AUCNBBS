@@ -1,12 +1,17 @@
+import { AppealButton } from './appeal-button';
 import { ContactButton } from './contact-button';
+import { FavoriteButton } from './favorite-button';
 import { ListingImages } from './listing-images';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import type { AppLocale } from '@/i18n/routing';
+import { Link, type AppLocale } from '@/i18n/routing';
 import { api, ApiError, type ListingDetail } from '@/lib/api';
+import { listingJsonLd } from '@/lib/seo';
+import { serverToken } from '@/lib/server-auth';
 import { cityName, formatDate, formatMoney } from '@/lib/format';
 import { ListingPrice } from './listing-card';
 import { OwnerActions } from './owner-actions';
+import { PhoneReveal } from './phone-reveal';
 import { ReportButton } from './report-button';
 
 function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
@@ -22,7 +27,8 @@ function Row({ label, value }: { label: string; value: string | number | null | 
 export async function ListingDetailView({ id }: { id: string }) {
   let l: ListingDetail;
   try {
-    l = await api<ListingDetail>(`/listings/${id}`);
+    // Forward the visitor's session cookie so owners see their own drafts/pending items.
+    l = await api<ListingDetail>(`/listings/${id}`, { token: await serverToken() });
   } catch (e) {
     if (e instanceof ApiError && (e.problem.status === 404 || e.problem.status === 400)) notFound();
     throw e;
@@ -39,6 +45,7 @@ export async function ListingDetailView({ id }: { id: string }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
+      <script type="application/ld+json">{JSON.stringify(listingJsonLd(l))}</script>
       <article className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center gap-2 text-xs">
           <span
@@ -144,14 +151,27 @@ export async function ListingDetailView({ id }: { id: string }) {
             </>
           )}
         </dl>
+        {l.status === 'rejected' && l.reviewNote && (
+          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-900">
+            {t('rejectNote')}: {l.reviewNote}
+          </div>
+        )}
         <div className="mt-6 flex items-center gap-4">
+          <FavoriteButton subjectType="listing" subjectId={l.id} />
           <ReportButton subjectType="listing" subjectId={l.id} />
+          {['removed', 'rejected'].includes(l.status) && (
+            <AppealButton subjectType="listing" subjectId={l.id} />
+          )}
         </div>
       </article>
       <aside className="space-y-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4 text-sm">
           <div className="text-xs text-muted">{t('postedBy')}</div>
-          <div className="font-medium">{l.owner.displayName}</div>
+          <div className="font-medium">
+            <Link href={`/users/${l.owner.id}`} className="hover:text-brand">
+              {l.owner.displayName}
+            </Link>
+          </div>
           <div className="text-xs text-muted">
             {t('memberSince')} {formatDate(l.owner.memberSince, loc)}
           </div>
@@ -164,6 +184,7 @@ export async function ListingDetailView({ id }: { id: string }) {
                 : t('contactPublic')}
           </div>
           <ContactButton listingId={l.id} ownerId={l.owner.id} />
+          {l.contactPolicy !== 'in_app' && <PhoneReveal listingId={l.id} />}
           <OwnerActions listing={l} />
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">

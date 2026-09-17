@@ -12,7 +12,7 @@ export function ReportButton({
   subjectType,
   subjectId,
 }: {
-  subjectType: 'listing' | 'post' | 'comment' | 'user' | 'article';
+  subjectType: 'listing' | 'post' | 'comment' | 'user' | 'article' | 'business' | 'event';
   subjectId: string;
 }) {
   const t = useTranslations('report');

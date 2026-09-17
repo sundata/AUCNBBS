@@ -13,6 +13,8 @@ export async function fixture(prisma: PrismaClient, role: Role = 'member') {
     data: {
       displayName: `Test ${role}`,
       role,
+      // Backdate so new-account restrictions (e.g. business reviews) don't fire.
+      createdAt: new Date(Date.now() - 2 * 86_400_000),
       identities: {
         create: { provider: 'email_otp', providerSubject: email, verifiedAt: new Date() },
       },

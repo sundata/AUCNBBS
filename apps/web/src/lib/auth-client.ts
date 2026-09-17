@@ -3,39 +3,55 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 
-const KEY = 'aucn.auth';
+/**
+ * W-1: no long-lived token in localStorage. The refresh token lives in an
+ * httpOnly cookie set by the API; the short-lived access token is kept in
+ * module memory only and re-minted via POST /auth/refresh (cookie) on load
+ * and expiry.
+ */
+interface MemAuth {
+  accessToken: string;
+  expiresAt: number;
+}
 
+let memAuth: MemAuth | null = null;
+let refreshInFlight: Promise<string | null> | null = null;
+
+/** Kept for call-site compatibility: stores only the access token in memory. */
 export interface StoredAuth {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
   expiresAt: number;
 }
 
 export function readAuth(): StoredAuth | null {
-  if (typeof window === 'undefined') return null;
-  const raw = window.localStorage.getItem(KEY);
-  if (!raw) return null;
+  return memAuth ? { accessToken: memAuth.accessToken, expiresAt: memAuth.expiresAt } : null;
+}
+
+export function writeAuth(auth: StoredAuth | null): void {
+  memAuth = auth ? { accessToken: auth.accessToken, expiresAt: auth.expiresAt } : null;
+  window.dispatchEvent(new Event('aucn-auth'));
+}
+
+async function refreshAccessToken(): Promise<string | null> {
   try {
-    return JSON.parse(raw) as StoredAuth;
+    // No body: the API reads the httpOnly refresh cookie.
+    const t = await api<{ accessToken: string; refreshToken?: string; expiresIn: number }>(
+      '/auth/refresh',
+      { method: 'POST', body: JSON.stringify({}) },
+    );
+    memAuth = { accessToken: t.accessToken, expiresAt: Date.now() + t.expiresIn * 1000 };
+    return t.accessToken;
   } catch {
+    memAuth = null;
     return null;
   }
 }
 
-export function writeAuth(auth: StoredAuth | null): void {
-  if (auth) window.localStorage.setItem(KEY, JSON.stringify(auth));
-  else window.localStorage.removeItem(KEY);
-  window.dispatchEvent(new Event('aucn-auth'));
-}
-
-let refreshInFlight: Promise<string | null> | null = null;
-
 export async function getAccessToken(): Promise<string | null> {
-  const auth = readAuth();
-  if (!auth) return null;
-  if (auth.expiresAt - 30_000 > Date.now()) return auth.accessToken;
+  if (memAuth && memAuth.expiresAt - 30_000 > Date.now()) return memAuth.accessToken;
   if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = refreshAccessToken(auth);
+  refreshInFlight = refreshAccessToken();
   try {
     return await refreshInFlight;
   } finally {
@@ -43,32 +59,24 @@ export async function getAccessToken(): Promise<string | null> {
   }
 }
 
-async function refreshAccessToken(auth: StoredAuth): Promise<string | null> {
-  try {
-    const t = await api<{ accessToken: string; refreshToken: string; expiresIn: number }>(
-      '/auth/refresh',
-      {
-        method: 'POST',
-        body: JSON.stringify({ refreshToken: auth.refreshToken }),
-      },
-    );
-    writeAuth({
-      accessToken: t.accessToken,
-      refreshToken: t.refreshToken,
-      expiresAt: Date.now() + t.expiresIn * 1000,
-    });
-    return t.accessToken;
-  } catch {
-    writeAuth(null);
-    return null;
-  }
-}
-
 export interface Me {
   id: string;
   displayName: string;
   role: string;
+  locale: string;
+  bio: string | null;
+  homeCityId: string | null;
   email: string | null;
+  interests: string[];
+  avatarMediaId: string | null;
+  birthYear: number | null;
+  totpEnabled: boolean;
+  notificationPrefs: Record<string, unknown> | null;
+  marketingOptOut: boolean;
+  personalizationOff: boolean;
+  onboardedAt: string | null;
+  deletionRequestedAt: string | null;
+  createdAt: string;
 }
 
 export function useAuth(): { me: Me | null; loading: boolean; logout: () => Promise<void> } {
@@ -98,18 +106,13 @@ export function useAuth(): { me: Me | null; loading: boolean; logout: () => Prom
   }, [load]);
 
   const logout = useCallback(async () => {
-    const auth = readAuth();
-    if (auth) {
-      try {
-        await api('/auth/logout', {
-          method: 'POST',
-          body: JSON.stringify({ refreshToken: auth.refreshToken }),
-        });
-      } catch {
-        // best effort
-      }
+    try {
+      await api('/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+    } catch {
+      // best effort — cookies are cleared server-side regardless
     }
-    writeAuth(null);
+    memAuth = null;
+    window.dispatchEvent(new Event('aucn-auth'));
   }, []);
 
   return { me, loading, logout };

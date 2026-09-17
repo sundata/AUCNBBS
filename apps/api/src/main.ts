@@ -5,8 +5,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ProblemDetailsFilter } from './common/problem-details.filter';
+import { startTelemetry } from './telemetry';
 
 async function bootstrap(): Promise<void> {
+  await startTelemetry();
   const app = await NestFactory.create(AppModule, { bufferLogs: false, rawBody: true });
   app.use(helmet());
   app.enableCors({

@@ -3,7 +3,9 @@
     "name": "澳中生活圈",
     "tagline": "在澳华人的资讯、社区与本地信息平台",
     "disclaimer": "本站内容由用户发布或社区整理，涉及签证、法律、税务、医疗、金融的内容仅供参考，不构成专业建议。平台不参与任何交易，不托管资金。",
-    "footer": "© {year} 澳中生活圈 · 公测版"
+    "footer": "© {year} 澳中生活圈 · 公测版",
+    "privacy": "隐私政策",
+    "terms": "用户协议"
   },
   "nav": {
     "home": "首页",
@@ -21,7 +23,10 @@
     "switchLocale": "English",
     "allCities": "全澳",
     "messages": "消息中心",
-    "admin": "管理后台"
+    "admin": "管理后台",
+    "weekend": "周末去哪儿",
+    "businesses": "商家",
+    "events": "活动"
   },
   "home": {
     "headlines": "今日头条",
@@ -32,7 +37,8 @@
     "services": "生活服务",
     "more": "更多",
     "cityHint": "选择城市查看本地信息",
-    "empty": "暂无内容"
+    "empty": "暂无内容",
+    "sponsored": "推广"
   },
   "listing": {
     "type": {
@@ -111,7 +117,22 @@
     "loginEdit": "登录后编辑",
     "notOwner": "仅发布者可编辑",
     "billing": "推广与订单",
-    "promoted": "推广"
+    "promoted": "推广",
+    "rejectNote": "审核未通过原因",
+    "submitReview": "提交审核",
+    "withdraw": "撤回",
+    "priceMin": "最低价",
+    "priceMax": "最高价",
+    "suburb": "区",
+    "bedrooms": "卧室≥",
+    "sort": "排序",
+    "sortLatest": "最新",
+    "sortPriceAsc": "价格↑",
+    "sortPriceDesc": "价格↓",
+    "apply": "筛选",
+    "revealPhone": "查看电话",
+    "phoneLogin": "登录后查看电话",
+    "phoneError": "无法获取电话"
   },
   "housing": {
     "kind": {
@@ -186,7 +207,31 @@
     "replyPlaceholder": "写下你的回复……",
     "loginToReply": "登录后参与讨论",
     "noComments": "还没有评论，来说两句。",
-    "notFound": "帖子不存在或已删除"
+    "notFound": "帖子不存在或已删除",
+    "anonymousName": "匿名用户",
+    "edited": "已编辑",
+    "locked": "已锁定",
+    "lockedHint": "帖子已锁定，无法回复。",
+    "pollTitle": "投票 · {count} 人参与",
+    "pollClosed": "（已结束）",
+    "vote": "投票",
+    "loginToVote": "登录后投票",
+    "edit": "编辑",
+    "save": "保存",
+    "cancel": "取消",
+    "modTools": "版主工具",
+    "accepted": "已采纳",
+    "accept": "采纳为答案",
+    "unaccept": "取消采纳",
+    "error": "操作失败",
+    "mod": {
+      "pin": "置顶",
+      "unpin": "取消置顶",
+      "lock": "锁定",
+      "unlock": "解锁",
+      "slowmode": "慢速模式",
+      "slowmodeSec": "秒/条"
+    }
   },
   "news": {
     "title": "资讯",
@@ -210,13 +255,27 @@
       "all": "全部",
       "listings": "分类信息",
       "posts": "帖子",
-      "articles": "资讯"
+      "articles": "资讯",
+      "businesses": "商家",
+      "events": "活动"
     },
     "kind": {
       "listing": "信息",
       "post": "帖子",
-      "article": "资讯"
-    }
+      "article": "资讯",
+      "business": "商家",
+      "event": "活动"
+    },
+    "saveSearch": "保存此搜索",
+    "saveConfirm": "保存",
+    "savedSearchDone": "已保存，可在“我的”管理",
+    "cadence": {
+      "instant": "即时",
+      "daily": "每日",
+      "weekly": "每周",
+      "off": "仅保存"
+    },
+    "sponsored": "推广"
   },
   "auth": {
     "title": "邮箱登录",
@@ -233,7 +292,10 @@
     "required": "请先登录",
     "continueWith": "使用 {provider} 登录",
     "phone": "手机号（含国家代码）",
-    "verifying": "正在验证登录…"
+    "verifying": "正在验证登录…",
+    "mfaCode": "Authenticator 验证码",
+    "mfaVerify": "验证并登录",
+    "continueWithPasskey": "使用通行密钥登录"
   },
   "post": {
     "title": "发布信息",
@@ -278,7 +340,7 @@
     "board": "板块",
     "postType": "帖子类型",
     "discussion": "讨论",
-    "question": "提问",
+    "question": "问答",
     "anonymous": "匿名发布",
     "validation": "请检查表单：{fields}",
     "propertyTypes": {
@@ -346,7 +408,13 @@
       "in_app": "站内联系",
       "phone_on_request": "电话按需提供",
       "public": "公开在正文"
-    }
+    },
+    "poll": "投票",
+    "pollOptions": "投票选项",
+    "pollOption": "选项 {n}",
+    "pollAddOption": "+ 添加选项",
+    "pollMulti": "允许多选",
+    "contactPhone": "联系电话"
   },
   "report": {
     "title": "举报",
@@ -376,7 +444,26 @@
     "displayName": "昵称",
     "save": "保存",
     "saved": "已保存",
-    "myListings": "我的发布"
+    "myListings": "我的发布",
+    "favorites": "我的收藏",
+    "noFavorites": "还没有收藏",
+    "favType": {
+      "listing": "信息",
+      "post": "帖子",
+      "article": "资讯",
+      "business": "商家",
+      "event": "活动"
+    },
+    "savedSearches": "保存的搜索",
+    "noSavedSearches": "还没有保存的搜索",
+    "savedSearchHint": "在搜索页可把当前关键词保存为提醒。",
+    "cadence": {
+      "instant": "即时",
+      "daily": "每日",
+      "weekly": "每周",
+      "off": "关闭提醒"
+    },
+    "loadMore": "加载更多"
   },
   "common": {
     "loading": "加载中…",
@@ -385,7 +472,8 @@
     "back": "返回",
     "cancel": "取消",
     "close": "关闭",
-    "optional": "可选"
+    "optional": "可选",
+    "delete": "删除"
   },
   "messages": {
     "title": "消息中心",
@@ -404,7 +492,31 @@
     "reportUpdate": "举报处理状态已更新",
     "contact": "联系发布者",
     "paymentUpdate": "付款已确认，推广权益已生效",
-    "markRead": "标记已读"
+    "markRead": "标记已读",
+    "kind": {
+      "listingApproved": "你的信息已通过审核并上线",
+      "listingRejected": "你的信息未通过审核，可在“我的”查看原因并修改重发",
+      "moderationActioned": "你发布的内容被处置，如有异议可在“我的”或内容页提出申诉",
+      "appealUpheld": "你的申诉经复核维持原处置",
+      "appealOverturned": "你的申诉成立，内容已恢复",
+      "claimApproved": "商家认领已通过，你现在可以管理该商家页",
+      "claimRejected": "商家认领未通过",
+      "eventRsvp": "你的活动有新报名",
+      "eventPromoted": "你从活动候补转为正式报名",
+      "eventCancelled": "你报名的活动已取消",
+      "eventReminder": "活动即将开始",
+      "savedSearchAlert": "保存的搜索有新结果"
+    },
+    "requestTag": "新请求",
+    "requestPrompt": "对方想与你联系，接受后才能继续对话。",
+    "accept": "接受",
+    "decline": "拒绝",
+    "declined": "此消息请求已被拒绝。",
+    "blockUser": "拉黑 {name}",
+    "recalled": "消息已撤回",
+    "recall": "撤回",
+    "linkWarning": "包含外部链接，谨防诈骗。",
+    "masked": "部分敏感信息已自动遮盖。"
   },
   "admin": {
     "title": "管理后台",
@@ -438,7 +550,26 @@
     "save": "保存文章",
     "saved": "保存成功",
     "error": "操作失败",
-    "articleTitle": "文章标题"
+    "articleTitle": "文章标题",
+    "queue": "信息审核队列",
+    "rejectReason": "拒绝原因（拒绝时必填，至少 5 个字）",
+    "approve": "通过上线",
+    "reject": "拒绝",
+    "images": "{count} 张图",
+    "queueHint": "通过后信息立即上线；拒绝后房主会收到通知并可修改重发。",
+    "appeals": "申诉复核",
+    "appealNote": "复核说明（至少 5 个字）",
+    "appeal": {
+      "upheld": "维持处置",
+      "overturned": "撤销并恢复"
+    },
+    "appealHint": "原处理人不得独立裁决自己的处置；撤销会恢复被移除的内容。",
+    "claims": "商家认领审核",
+    "claimNote": "审核备注（可选）",
+    "claim": {
+      "approved": "批准认领",
+      "rejected": "拒绝"
+    }
   },
   "media": {
     "title": "图片",
@@ -469,5 +600,297 @@
     "refund": "申请全额退款",
     "paymentId": "订单编号",
     "reason": "退款原因"
+  },
+  "favorite": {
+    "save": "收藏",
+    "saved": "已收藏"
+  },
+  "appeal": {
+    "open": "对此处置提出申诉",
+    "placeholder": "说明你认为处置有误的理由（至少 10 个字），将由另一名审核员复核。",
+    "submit": "提交申诉",
+    "sent": "申诉已提交，复核结果会通过站内通知告知。"
+  },
+  "onboarding": {
+    "title": "完善你的资料",
+    "subtitle": "告诉我们你在哪座城市、关心什么，首页会更贴近你的需要。都可以跳过。",
+    "name": "昵称",
+    "city": "所在城市",
+    "skipCity": "暂不选择",
+    "interests": "感兴趣的内容",
+    "interest": {
+      "housing": "租房",
+      "jobs": "招聘",
+      "market": "二手",
+      "services": "生活服务",
+      "community": "社区",
+      "news": "资讯",
+      "events": "活动",
+      "businesses": "商家"
+    },
+    "finish": "完成",
+    "skip": "先跳过",
+    "login": "请先登录",
+    "birthYear": "出生年份（选填）",
+    "birthYearHint": "用于年龄限制类目的合规要求"
+  },
+  "account": {
+    "securityTitle": "隐私与安全",
+    "avatar": "头像",
+    "changeAvatar": "更换头像",
+    "sessions": "登录设备",
+    "unknownDevice": "未知设备",
+    "currentSession": "当前设备",
+    "revoke": "下线",
+    "export": "导出我的数据（JSON）",
+    "deleteAccount": "注销账号",
+    "deleteConfirm": "注销后有 7 天冷静期，期间登录可在本页取消；到期后账号将被匿名化，此操作不可撤销。",
+    "deleteConfirmButton": "确认注销",
+    "deletionRequested": "注销已进入冷静期，到期后账号将被匿名化。",
+    "deletionPending": "注销冷静期进行中（{date} 起）。",
+    "cancelDeletion": "取消注销",
+    "extrasTitle": "安全与偏好",
+    "mfaTitle": "两步验证（TOTP）",
+    "mfaOn": "已开启",
+    "mfaDisable": "关闭",
+    "mfaDisablePrompt": "输入当前 Authenticator 验证码以关闭",
+    "mfaScanHint": "用 Authenticator 扫码或复制此 URI：",
+    "mfaSecret": "密钥",
+    "mfaEnable": "启用",
+    "mfaSetup": "设置两步验证",
+    "mfaEnabled": "两步验证已开启",
+    "prefsTitle": "通知偏好",
+    "prefsSave": "保存偏好",
+    "prefsSaved": "已保存",
+    "blockedTitle": "已拉黑用户",
+    "unblock": "解除拉黑",
+    "invoicesTitle": "发票",
+    "pref": {
+      "interactions": "互动通知",
+      "transactions": "交易通知",
+      "system": "系统通知",
+      "marketing": "营销通知",
+      "marketingOptOut": "退订营销邮件",
+      "personalizationOff": "关闭个性化推荐"
+    },
+    "passkeyTitle": "通行密钥",
+    "passkeyAdd": "添加通行密钥",
+    "passkeyAdded": "通行密钥已添加",
+    "pushTitle": "推送通知",
+    "pushEnable": "在此设备上启用推送通知"
+  },
+  "businesses": {
+    "title": "商家目录",
+    "add": "收录商家",
+    "addTitle": "收录新商家",
+    "searchPlaceholder": "搜索商家名",
+    "allCategories": "全部类别",
+    "filter": "筛选",
+    "empty": "还没有商家，来收录第一家。",
+    "more": "加载更多",
+    "claimed": "已认领",
+    "reviews": "{count} 条评价",
+    "noReviews": "还没有评价",
+    "location": "位置",
+    "hours": "营业时间",
+    "priceRange": "价格区间",
+    "phone": "电话",
+    "website": "网站",
+    "claim": "认领此商家",
+    "claimPlaceholder": "请提供认领凭据（如登记邮箱、电话或 ABN 证明），管理员核实后开通管理权限。",
+    "claimSubmit": "提交认领",
+    "claimSent": "认领申请已提交，等待管理员审核。",
+    "rating": "评分",
+    "reviewPlaceholder": "写下你的真实体验……",
+    "reviewSubmit": "发表评价",
+    "loginToReview": "登录后可评价",
+    "ownerReply": "商家回复",
+    "reply": "回复",
+    "replySubmit": "提交回复",
+    "submit": "提交",
+    "category": {
+      "restaurant": "餐饮",
+      "moving": "搬家",
+      "cleaning": "清洁",
+      "repair": "维修",
+      "accounting": "会计",
+      "legal": "法律",
+      "real_estate": "房产",
+      "education": "教育",
+      "beauty": "美容",
+      "automotive": "汽车",
+      "travel": "旅游",
+      "healthcare": "医疗",
+      "other": "其他"
+    },
+    "form": {
+      "nameZh": "中文名",
+      "nameEn": "英文名",
+      "category": "类别",
+      "description": "简介",
+      "suburb": "区（Suburb）",
+      "city": "城市",
+      "address": "地址",
+      "phone": "电话",
+      "website": "网站",
+      "hours": "营业时间",
+      "priceRange": "价格区间"
+    },
+    "locations": "门店",
+    "primary": "主店",
+    "offers": "优惠",
+    "offerEnds": "{date} 截止",
+    "contactBusiness": "联系商家",
+    "leadName": "你的称呼",
+    "leadContact": "联系方式（手机/邮箱/微信）",
+    "leadMessage": "想咨询什么？",
+    "leadSent": "已发送给商家",
+    "send": "发送",
+    "leadsTitle": "线索收件箱",
+    "viewLeads": "查看线索",
+    "exportCsv": "导出 CSV",
+    "noLeads": "暂无线索",
+    "markContacted": "标记已联系",
+    "error": "操作失败"
+  },
+  "events": {
+    "title": "活动",
+    "add": "发布活动",
+    "addTitle": "发布新活动",
+    "allCategories": "全部类别",
+    "filter": "筛选",
+    "empty": "近期没有活动，来发起一个。",
+    "more": "加载更多",
+    "online": "线上",
+    "free": "免费",
+    "going": "{count} 人报名",
+    "when": "时间",
+    "where": "地点",
+    "organizer": "主办方",
+    "price": "费用",
+    "capacity": "名额",
+    "unlimited": "不限",
+    "rsvp": "报名",
+    "cancelRsvp": "取消报名",
+    "leaveWaitlist": "退出候补",
+    "rsvpState": {
+      "going": "已报名",
+      "waitlist": "候补中"
+    },
+    "cancelled": "已取消",
+    "cancelEvent": "取消活动",
+    "ticketing": "购票 / 报名链接",
+    "ics": "加入日历 (.ics)",
+    "submit": "发布",
+    "category": {
+      "community": "社区",
+      "food": "美食",
+      "sports": "运动",
+      "arts": "文艺",
+      "education": "教育",
+      "career": "职场",
+      "family": "亲子",
+      "online": "线上",
+      "other": "其他"
+    },
+    "form": {
+      "title": "活动名称",
+      "body": "活动详情",
+      "category": "类别",
+      "city": "城市",
+      "venue": "场地",
+      "startsAt": "开始时间",
+      "endsAt": "结束时间",
+      "capacity": "名额上限",
+      "price": "费用（澳元，免费留空）",
+      "externalUrl": "外部购票/报名链接"
+    },
+    "recurrence": {
+      "weekly": "每周",
+      "fortnightly": "双周",
+      "monthly": "每月"
+    },
+    "checkinCode": "入场签到码",
+    "checkedIn": "已签到 ✓"
+  },
+  "privacy": {
+    "title": "隐私政策",
+    "updated": "最后更新：2026-09-13",
+    "intro": "本政策说明澳中生活圈（AUCN Hub）如何收集、使用和保护你的个人信息。",
+    "sections": {
+      "collect": {
+        "title": "我们收集什么",
+        "body": "账号信息（邮箱或第三方登录标识、昵称、城市、头像）；你发布的内容（帖子、分类信息、评价、活动、私信）；使用数据（浏览、搜索、登录设备信息）；支付由 Stripe 处理，平台不保存卡号。"
+      },
+      "use": {
+        "title": "用途",
+        "body": "用于提供登录、内容发布、私信、审核与安全防护、付费权益履约、法定的合规义务。我们不会出售个人信息或私信内容。"
+      },
+      "share": {
+        "title": "共享",
+        "body": "你公开发布的内容对访客可见；私信仅在会话双方之间可见；支付信息仅与 Stripe 共享；如法律要求可向执法机关披露。"
+      },
+      "storage": {
+        "title": "存储与安全",
+        "body": "数据存储于澳大利亚境内的数据库；传输使用 TLS；密钥与令牌以哈希形式存储。我们会在合理期限内保留运营与安全所需的数据。"
+      },
+      "rights": {
+        "title": "你的权利",
+        "body": "在“我的”页面可以导出个人数据、管理登录设备、申请注销账号（7 天冷静期后可取消）。你也可以联系我们以更正或删除信息。"
+      },
+      "cookies": {
+        "title": "Cookie",
+        "body": "本站仅使用会话与偏好所必需的最小 Cookie / 本地存储，不使用第三方广告追踪 Cookie。"
+      },
+      "contact": {
+        "title": "联系我们",
+        "body": "隐私相关问题请通过站内反馈或联系页面提供的支持渠道联系我们。"
+      }
+    }
+  },
+  "terms": {
+    "title": "用户协议",
+    "updated": "最后更新：2026-09-13",
+    "sections": {
+      "acceptance": {
+        "title": "接受条款",
+        "body": "使用本平台即表示你同意本协议与社区规范。平台面向澳大利亚本地生活服务，内容由用户自行发布。"
+      },
+      "accounts": {
+        "title": "账号",
+        "body": "你需要对账号下的行为负责；提供虚假信息、冒充他人或绕过安全措施会导致账号受限。"
+      },
+      "content": {
+        "title": "用户内容",
+        "body": "你保留所发布内容的权利，并授予平台为提供服务所需的展示许可。你保证发布的信息真实、合法、不侵犯他人权利。"
+      },
+      "prohibited": {
+        "title": "禁止行为",
+        "body": "禁止诈骗、歧视、骚扰、非法商品、侵犯隐私、垃圾信息以及发布危险或误导性内容。租房与招聘信息须遵守澳洲相关法律。"
+      },
+      "moderation": {
+        "title": "审核与处置",
+        "body": "平台可对内容进行审核、下架或限制账号。对处置结果有异议可提交申诉，由另一名审核员复核。"
+      },
+      "paid": {
+        "title": "付费服务",
+        "body": "推广等付费服务通过 Stripe 结算；费用以页面展示为准，退款按页面说明处理。付费不改变内容审核标准。"
+      },
+      "liability": {
+        "title": "责任限制",
+        "body": "平台不参与用户之间的交易，不托管资金，不对用户内容的真实性作担保。请自行核实并在见面交易时注意安全。"
+      },
+      "changes": {
+        "title": "协议变更",
+        "body": "协议更新会在本页公布；继续使用即视为接受新版本。"
+      }
+    }
+  },
+  "profile": {
+    "memberSince": "{date} 加入",
+    "postCount": "{count} 个帖子",
+    "listings": "在发布的信息",
+    "follow": "关注",
+    "unfollow": "取消关注"
   }
 }

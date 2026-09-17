@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aucn/domain": "workspace:*",
+    "@simplewebauthn/browser": "13.2.2",
     "next": "^15.5.0",
     "next-intl": "^4.3.0",
     "react": "^19.1.0",

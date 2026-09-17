@@ -19,6 +19,7 @@ function setup(status = 'active', expiresAt = new Date(now.getTime() - 1)) {
     expiresAt,
     version: 3,
     type: 'item',
+    riskFlags: [] as string[],
     owner: { id: 'owner', displayName: 'Owner', createdAt: now },
     city: {},
     createdAt: now,
@@ -29,7 +30,13 @@ function setup(status = 'active', expiresAt = new Date(now.getTime() - 1)) {
     update: vi.fn().mockResolvedValue({ ...row, status: 'active' }),
     updateMany: vi.fn().mockResolvedValue({ count: 2 }),
   };
-  return { listing, service: new ListingsService({ listing } as unknown as PrismaService) };
+  const prisma = {
+    listing,
+    user: { findUnique: vi.fn().mockResolvedValue({ role: 'member' }) },
+    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
+    $transaction: vi.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
+  };
+  return { listing, service: new ListingsService(prisma as unknown as PrismaService) };
 }
 afterEach(() => vi.useRealTimers());
 describe('listing lifecycle', () => {

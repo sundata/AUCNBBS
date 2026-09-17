@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { startAuthentication } from '@simplewebauthn/browser';
+import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser';
 import { api } from '@/lib/api';
 import { writeAuth } from '@/lib/auth-client';
 import { useRouter } from '@/i18n/routing';
@@ -15,6 +17,7 @@ export function AlternateLogin() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
+  const [mfaTicket, setMfaTicket] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -50,6 +53,39 @@ export function AlternateLogin() {
           {t('continueWith', { provider })}
         </button>
       ))}
+      {'PublicKeyCredential' in window && (
+        <button
+          disabled={busy}
+          className="block border rounded p-2 w-full"
+          onClick={() => {
+            setBusy(true);
+            setError('');
+            void (async () => {
+              const { options, ticket } = await api<{
+                options: PublicKeyCredentialRequestOptionsJSON;
+                ticket: string;
+              }>('/auth/passkey/login/options', { method: 'POST', body: JSON.stringify({}) });
+              const response = await startAuthentication({ optionsJSON: options });
+              const result = await api<{
+                accessToken: string;
+                expiresIn: number;
+              }>('/auth/passkey/login/verify', {
+                method: 'POST',
+                body: JSON.stringify({ ticket, response }),
+              });
+              writeAuth({
+                accessToken: result.accessToken,
+                expiresAt: Date.now() + result.expiresIn * 1000,
+              });
+              router.push('/me');
+            })()
+              .catch(fail)
+              .finally(() => setBusy(false));
+          }}
+        >
+          {t('continueWithPasskey')}
+        </button>
+      )}
       {providers.phone && (
         <form
           className="border-t pt-3 space-y-2"
@@ -64,13 +100,35 @@ export function AlternateLogin() {
                   body: JSON.stringify({ phone }),
                 });
                 setSent(true);
+              } else if (mfaTicket) {
+                const result = await api<{
+                  accessToken: string;
+                  expiresIn: number;
+                }>('/auth/mfa/complete', {
+                  method: 'POST',
+                  body: JSON.stringify({ ticket: mfaTicket, code }),
+                });
+                writeAuth({
+                  accessToken: result.accessToken,
+                  expiresAt: Date.now() + result.expiresIn * 1000,
+                });
+                router.push('/me');
               } else {
                 const result = await api<{
                   accessToken: string;
-                  refreshToken: string;
                   expiresIn: number;
+                  mfaRequired?: boolean;
+                  ticket?: string;
                 }>('/auth/phone/verify', { method: 'POST', body: JSON.stringify({ phone, code }) });
-                writeAuth({ ...result, expiresAt: Date.now() + result.expiresIn * 1000 });
+                if (result.mfaRequired && result.ticket) {
+                  setMfaTicket(result.ticket);
+                  setCode('');
+                  return;
+                }
+                writeAuth({
+                  accessToken: result.accessToken,
+                  expiresAt: Date.now() + result.expiresIn * 1000,
+                });
                 router.push('/me');
               }
             })()
@@ -83,7 +141,7 @@ export function AlternateLogin() {
             <input
               type="tel"
               placeholder="+61412345678"
-              required
+              required={!mfaTicket}
               disabled={sent}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -92,7 +150,7 @@ export function AlternateLogin() {
           </label>
           {sent && (
             <label>
-              {t('code')}
+              {mfaTicket ? t('mfaCode') : t('code')}
               <input
                 required
                 pattern="[0-9]{6}"

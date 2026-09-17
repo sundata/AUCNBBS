@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, NotFoundException, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  HttpCode,
+  NotFoundException,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { createReportSchema, REPORT_SEVERITY, ReportSubjectType } from '@aucn/domain';
@@ -36,6 +44,19 @@ export class ReportsController {
     @CurrentUser() user?: AccessTokenPayload,
   ): Promise<ReportReceiptDto> {
     await this.assertSubjectExists(body.subjectType, body.subjectId);
+    // W-13: one open report per reporter+subject per 24h; guests are IP-throttled above.
+    if (user) {
+      const dup = await this.prisma.report.findFirst({
+        where: {
+          reporterId: user.sub,
+          subjectType: body.subjectType,
+          subjectId: body.subjectId,
+          createdAt: { gt: new Date(Date.now() - 86_400_000) },
+        },
+        select: { reference: true },
+      });
+      if (dup) throw new ConflictException(`Already reported as ${dup.reference}`);
+    }
     const report = await this.prisma.report.create({
       data: {
         reference: makeReference(),
@@ -64,7 +85,11 @@ export class ReportsController {
             ? await this.prisma.comment.findUnique({ where: { id }, select: { id: true } })
             : type === 'article'
               ? await this.prisma.article.findUnique({ where: { id }, select: { id: true } })
-              : await this.prisma.user.findUnique({ where: { id }, select: { id: true } });
+              : type === 'business'
+                ? await this.prisma.business.findUnique({ where: { id }, select: { id: true } })
+                : type === 'event'
+                  ? await this.prisma.event.findUnique({ where: { id }, select: { id: true } })
+                  : await this.prisma.user.findUnique({ where: { id }, select: { id: true } });
     if (!exists) throw new NotFoundException('Report subject not found');
   }
 }

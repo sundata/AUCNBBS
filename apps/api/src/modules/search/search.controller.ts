@@ -7,7 +7,7 @@ import { SEARCH_PROVIDER, SearchProvider, SearchResult } from './search.provider
 
 const searchQuerySchema = z.object({
   q: z.string().min(1).max(120),
-  scope: z.enum(['all', 'listings', 'posts', 'articles']).default('all'),
+  scope: z.enum(['all', 'listings', 'posts', 'articles', 'businesses', 'events']).default('all'),
   cityId: z.string().uuid().optional(),
   type: z.enum(LISTING_TYPES).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),

@@ -10,12 +10,14 @@ import { getAccessToken, useAuth } from '@/lib/auth-client';
 
 const ACTIONS: {
   to: ListingStatus;
-  key: 'markCompleted' | 'pause' | 'resume' | 'renew' | 'archive';
+  key: 'markCompleted' | 'pause' | 'resume' | 'renew' | 'archive' | 'submitReview' | 'withdraw';
 }[] = [
   { to: 'completed', key: 'markCompleted' },
   { to: 'paused', key: 'pause' },
   { to: 'active', key: 'resume' },
   { to: 'archived', key: 'archive' },
+  { to: 'pending_review', key: 'submitReview' },
+  { to: 'draft', key: 'withdraw' },
 ];
 
 type OwnerActionsProps = {
@@ -40,9 +42,13 @@ function Actions({ listing, onChanged, userId }: OwnerActionsProps) {
 
   const status = effectiveListingStatus(listing.status, new Date(listing.expiresAt));
   const expired = status === 'expired';
-  const actions = ACTIONS.filter((a) => canTransition(status, a.to)).map((a) =>
-    a.to === 'active' && expired ? { ...a, key: 'renew' as const } : a,
-  );
+  const actions = ACTIONS.filter(
+    (a) =>
+      canTransition(status, a.to) &&
+      // Drafts resubmit for review instead of self-publishing; pending reviews
+      // can only be withdrawn to draft (approve/reject belongs to moderators).
+      !((status === 'draft' || status === 'pending_review') && a.to === 'active'),
+  ).map((a) => (a.to === 'active' && expired ? { ...a, key: 'renew' as const } : a));
 
   async function run(to: ListingStatus) {
     setBusy(true);

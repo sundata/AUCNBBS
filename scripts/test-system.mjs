@@ -21,6 +21,8 @@ const env = {
   STRIPE_PROMOTION_PRICE_ID: 'price_fixture',
   MEDIA_LOCAL_DIR: resolve(cwd, 'apps/api/uploads-test'),
   OTP_DELIVERY: 'log',
+  // Integration + browser tests share one server and would exhaust OTP throttle quotas.
+  THROTTLER_DISABLED: 'true',
 };
 const servers = [];
 function command(args) {

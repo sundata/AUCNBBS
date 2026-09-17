@@ -88,6 +88,7 @@ function Main() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
+  const [mfaTicket, setMfaTicket] = useState('');
   const [body, setBody] = useState('');
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -362,8 +363,8 @@ function Main() {
               />
               {sent && (
                 <TextInput
-                  accessibilityLabel={t('auth.code')}
-                  placeholder={t('auth.code')}
+                  accessibilityLabel={mfaTicket ? t('auth.mfaCode') : t('auth.code')}
+                  placeholder={mfaTicket ? t('auth.mfaCode') : t('auth.code')}
                   keyboardType="number-pad"
                   maxLength={6}
                   value={code}
@@ -383,17 +384,46 @@ function Main() {
                         false,
                       );
                       setSent(true);
-                    } else {
+                    } else if (mfaTicket) {
                       const tokens = await request<{
                         accessToken: string;
                         refreshToken: string;
                         expiresIn: number;
                       }>(
+                        '/auth/mfa/complete',
+                        { method: 'POST', body: JSON.stringify({ ticket: mfaTicket, code }) },
+                        false,
+                      );
+                      await saveTokens(tokens);
+                      setMe(await request<Me>('/me'));
+                      setSent(false);
+                      setMfaTicket('');
+                      setCode('');
+                      go('me');
+                    } else {
+                      const result = await request<{
+                        accessToken?: string;
+                        refreshToken?: string;
+                        expiresIn?: number;
+                        mfaRequired?: boolean;
+                        ticket?: string;
+                      }>(
                         '/auth/otp/verify',
                         { method: 'POST', body: JSON.stringify({ email, code }) },
                         false,
                       );
-                      await saveTokens(tokens);
+                      if (result.mfaRequired && result.ticket) {
+                        setMfaTicket(result.ticket);
+                        setCode('');
+                        return;
+                      }
+                      if (!result.accessToken || !result.refreshToken || !result.expiresIn)
+                        throw new Error('Sign-in failed');
+                      await saveTokens({
+                        accessToken: result.accessToken,
+                        refreshToken: result.refreshToken,
+                        expiresIn: result.expiresIn,
+                      });
                       setMe(await request<Me>('/me'));
                       setSent(false);
                       setCode('');

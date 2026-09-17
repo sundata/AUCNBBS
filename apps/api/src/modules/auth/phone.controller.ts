@@ -1,12 +1,17 @@
 import {
   Body,
   Controller,
+  Headers,
+  Ip,
   Post,
+  Res,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { z } from 'zod';
+import { setAuthCookies } from '../../common/cookies';
 import { ZodPipe } from '../../common/zod.pipe';
 import { AuthService } from './auth.service';
 const phone = z.object({ phone: z.string().regex(/^\+[1-9]\d{7,14}$/) });
@@ -46,12 +51,19 @@ export class PhoneController {
   }
   @Post('verify')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  async verify(@Body(new ZodPipe(check)) input: z.infer<typeof check>) {
+  async verify(
+    @Body(new ZodPipe(check)) input: z.infer<typeof check>,
+    @Headers('user-agent') userAgent: string | undefined,
+    @Ip() ip: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.call(
       'VerificationCheck',
       new URLSearchParams({ To: input.phone, Code: input.code }),
     );
     if (result.status !== 'approved') throw new UnauthorizedException('Invalid code');
-    return this.auth.signInIdentity('phone_otp', '', input.phone);
+    const signIn = await this.auth.signInIdentity('phone_otp', '', input.phone, userAgent, ip);
+    if ('accessToken' in signIn) setAuthCookies(res, signIn);
+    return signIn;
   }
 }
