@@ -19,3 +19,4 @@ test-results/
 
 .env.production
 uploads-test/
+.DS_Store
