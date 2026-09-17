@@ -50,6 +50,7 @@ services:
       target: web
       args:
         NEXT_PUBLIC_API_URL: ${API_PUBLIC_URL:?Set API_PUBLIC_URL}
+    env_file: ../.env.production
     environment:
       API_INTERNAL_URL: http://api:4000
       NODE_ENV: production
