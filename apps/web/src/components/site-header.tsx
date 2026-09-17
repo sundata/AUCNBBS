@@ -64,7 +64,7 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
           <nav className="flex items-center gap-2 sm:gap-3 text-sm ml-auto min-w-0">
             <Link
               href="/post"
-              className="rounded-lg bg-coral text-white px-3 py-2 font-medium shadow-sm hover:bg-[#c95440] hover:-translate-y-px"
+              className="rounded-lg bg-coral text-white px-3 py-2 font-medium shadow-sm hover:bg-coral-dark hover:-translate-y-px"
             >
               <span className="sm:hidden">+</span>
               <span className="hidden sm:inline">+ {t('post')}</span>

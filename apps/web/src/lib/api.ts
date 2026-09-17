@@ -28,6 +28,9 @@ export interface ListingDetail extends ListingSummary {
   version: number;
   body: string;
   contactPolicy: string;
+  hasPhone: boolean;
+  lat: number | null;
+  lng: number | null;
   owner: { id: string; displayName: string; memberSince: string };
   details: Record<string, unknown>;
   viewCount: number;

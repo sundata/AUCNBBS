@@ -87,7 +87,7 @@ export function ListingCard({ l, compact = false }: { l: ListingSummary; compact
       <div className="flex items-start gap-2">
         {l.promoted && <span className="text-xs text-amber-800">{t('promoted')}</span>}
         <span
-          className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${l.intent === 'wanted' ? 'bg-amber-100 text-amber-800' : 'bg-coral/10 text-coral'}`}
+          className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded ${l.intent === 'wanted' ? 'bg-amber-100 text-amber-800' : 'bg-coral/10 text-coral-dark'}`}
         >
           {t(`intentLabel.${l.type}.${l.intent}`)}
         </span>
@@ -104,7 +104,7 @@ export function ListingCard({ l, compact = false }: { l: ListingSummary; compact
         <ListingPrice l={l} />
       </div>
       {!compact && (
-        <div className="mt-1 text-[11px] text-gray-400">{formatDate(l.publishedAt, locale)}</div>
+        <div className="mt-1 text-[11px] text-gray-500">{formatDate(l.publishedAt, locale)}</div>
       )}
     </Link>
   );

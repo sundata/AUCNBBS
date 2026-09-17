@@ -811,7 +811,12 @@
       "monthly": "Monthly"
     },
     "checkinCode": "Check-in code",
-    "checkedIn": "Checked in ✓"
+    "checkedIn": "Checked in ✓",
+    "checkinLabel": "Door check-in",
+    "checkinPlaceholder": "Attendee check-in code",
+    "checkinSubmit": "Check in",
+    "checkinOk": "Checked in: {name}",
+    "checkinInvalid": "Invalid check-in code"
   },
   "privacy": {
     "title": "Privacy policy",
@@ -892,5 +897,10 @@
     "listings": "Active listings",
     "follow": "Follow",
     "unfollow": "Unfollow"
+  },
+  "map": {
+    "title": "Map location",
+    "openExternal": "Open in Google Maps",
+    "viewOnMap": "View on map"
   }
 }

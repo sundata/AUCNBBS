@@ -4,8 +4,9 @@ import { api, apiBase, ApiError, type EventDetail } from '@/lib/api';
 import { serverToken } from '@/lib/server-auth';
 import { cityName, formatDateTime, formatMoney } from '@/lib/format';
 import type { AppLocale } from '@/i18n/routing';
-import { EventCancelButton, RsvpButton } from '@/components/event-panels';
+import { CheckinForm, EventCancelButton, RsvpButton } from '@/components/event-panels';
 import { FavoriteButton } from '@/components/favorite-button';
+import { MapLink } from '@/components/map-embed';
 import { ReportButton } from '@/components/report-button';
 
 export default async function EventPage({
@@ -54,7 +55,16 @@ export default async function EventPage({
         </div>
         <div className="flex gap-3">
           <dt className="w-28 text-muted">{t('where')}</dt>
-          <dd>{e.online ? t('online') : `${e.venue ?? ''} ${cityName(e.city, loc)}`.trim()}</dd>
+          <dd>
+            {e.online ? (
+              t('online')
+            ) : (
+              <>
+                {`${e.venue ?? ''} ${cityName(e.city, loc)}`.trim()}{' '}
+                {e.venue && <MapLink query={`${e.venue}, ${cityName(e.city, loc)}, Australia`} />}
+              </>
+            )}
+          </dd>
         </div>
         <div className="flex gap-3">
           <dt className="w-28 text-muted">{t('organizer')}</dt>
@@ -98,6 +108,7 @@ export default async function EventPage({
         <ReportButton subjectType="event" subjectId={e.id} />
         {e.viewerIsOrganizer && e.status === 'published' && <EventCancelButton eventId={e.id} />}
       </div>
+      {e.viewerIsOrganizer && e.status === 'published' && <CheckinForm eventId={e.id} />}
     </article>
   );
 }

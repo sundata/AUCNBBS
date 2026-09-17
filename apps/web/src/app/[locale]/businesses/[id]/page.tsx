@@ -8,6 +8,7 @@ import { FavoriteButton } from '@/components/favorite-button';
 import { ReportButton } from '@/components/report-button';
 import { ReviewsList } from '@/components/business-reviews';
 import { LeadForm, LeadsInbox } from '@/components/business-extras';
+import { MapLink } from '@/components/map-embed';
 import { serverToken } from '@/lib/server-auth';
 
 export default async function BusinessPage({
@@ -60,7 +61,10 @@ export default async function BusinessPage({
             <dd>
               {b.suburb}
               {b.city ? `, ${cityName(b.city, loc)}` : ''}
-              {b.address ? ` · ${b.address}` : ''}
+              {b.address ? ` · ${b.address}` : ''}{' '}
+              <MapLink
+                query={`${b.address ?? ''} ${b.suburb}${b.city ? `, ${cityName(b.city, loc)}` : ''}, Australia`.trim()}
+              />
             </dd>
           </div>
           {b.openingHours && (
@@ -112,7 +116,8 @@ export default async function BusinessPage({
                 <p className="text-muted">
                   {loc.suburb}
                   {loc.address ? ` · ${loc.address}` : ''}
-                  {loc.phone ? ` · ${loc.phone}` : ''}
+                  {loc.phone ? ` · ${loc.phone}` : ''}{' '}
+                  <MapLink query={`${loc.address ?? ''} ${loc.suburb}, Australia`.trim()} />
                 </p>
               </li>
             ))}

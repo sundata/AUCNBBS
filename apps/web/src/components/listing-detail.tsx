@@ -2,6 +2,7 @@ import { AppealButton } from './appeal-button';
 import { ContactButton } from './contact-button';
 import { FavoriteButton } from './favorite-button';
 import { ListingImages } from './listing-images';
+import { MapEmbed } from './map-embed';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Link, type AppLocale } from '@/i18n/routing';
@@ -151,6 +152,11 @@ export async function ListingDetailView({ id }: { id: string }) {
             </>
           )}
         </dl>
+        {l.lat !== null && l.lng !== null && (
+          <div className="mt-6">
+            <MapEmbed lat={l.lat} lng={l.lng} label={l.title} />
+          </div>
+        )}
         {l.status === 'rejected' && l.reviewNote && (
           <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-900">
             {t('rejectNote')}: {l.reviewNote}

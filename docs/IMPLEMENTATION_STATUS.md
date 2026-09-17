@@ -92,3 +92,13 @@ API 启动和每分钟清理过期信息，避免重叠执行并记录重试错�
 - **邮件回退**：`common/mail.ts` 统一 SMTP/Resend/无配置安全失败。
 
 配置、操作和验证方法见 [DEPLOYMENT.md](DEPLOYMENT.md)。
+
+## 第五轮（地图 / 签到 / 移动端深化 / 无障碍）
+
+- **地图展示**：`components/map-embed.tsx` 在 listing、商家、活动详情页按坐标渲染嵌入式地图（OpenStreetMap iframe + 外链，无 API key 依赖）；无坐标时不渲染。
+- **活动签到 UI**：参加者详情页展示签到码；组织者专用验票表单提交 `POST /events/:id/checkin`，显示签到成功/失败状态。
+- **移动端深化**：详情页编辑入口与图片上传、收藏开关（listing/business/event）、商家目录与详情（门店/优惠/线索表单）、活动详情（RSVP/候补/取消/签到码/组织者验票）、举报入口；`mobile.spec.ts` 合约测试保证 App.tsx 引用的每条文案 key 在 zh/en 目录均存在（46 项断言）。
+- **无障碍（W-11）**：新增 `e2e/a11y.spec.ts`，axe-core 对 6 个公开页面做 WCAG 2.1 A/AA 扫描并纳入系统测试。首轮扫描发现并修复全部 serious 对比度违规：`--color-coral` #e36a52→#b54534（白字 5.43:1）、`--color-brand` #087f8c→#077884（red-50 上 4.76:1）、`--color-muted` #657789→#55677a、新增 `--color-coral-dark` 供浅底文字、gray-400→gray-500。
+- **测试矩阵更新**：单元 20（API）+ 领域测试 + mobile 46 项文案合约 + **集成 27 + Playwright 10（4 流程 + 6 a11y）全部通过**。
+
+仍未覆盖：Weekend 模块无自动化测试（独立附加功能）；App 无模拟器/真机验证；原生 passkey 与 APNs/FCM 推送需原生模块与平台账号，当前 App 侧未接。

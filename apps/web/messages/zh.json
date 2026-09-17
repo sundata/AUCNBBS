@@ -811,7 +811,12 @@
       "monthly": "每月"
     },
     "checkinCode": "入场签到码",
-    "checkedIn": "已签到 ✓"
+    "checkedIn": "已签到 ✓",
+    "checkinLabel": "签到验票",
+    "checkinPlaceholder": "输入参加者签到码",
+    "checkinSubmit": "验票",
+    "checkinOk": "已签到：{name}",
+    "checkinInvalid": "无效的签到码"
   },
   "privacy": {
     "title": "隐私政策",
@@ -892,5 +897,10 @@
     "listings": "在发布的信息",
     "follow": "关注",
     "unfollow": "取消关注"
+  },
+  "map": {
+    "title": "地图位置",
+    "openExternal": "在 Google 地图中打开",
+    "viewOnMap": "在地图中查看"
   }
 }

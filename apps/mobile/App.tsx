@@ -42,7 +42,22 @@ interface Row {
   createdAt?: string;
   kind?: string;
   subjectId?: string;
+  subjectType?: string;
   listingType?: string;
+  // business/event rows
+  nameZh?: string;
+  nameEn?: string;
+  category?: string;
+  suburb?: string;
+  startsAt?: string;
+  venue?: string | null;
+  goingCount?: number;
+  rating?: number;
+  author?: { displayName: string };
+  subjectMeta?: string | null;
+  viewerRsvp?: string | null;
+  checkinCode?: string | null;
+  viewerIsOrganizer?: boolean;
 }
 interface Me {
   id: string;
@@ -63,7 +78,11 @@ type Screen =
   | 'article'
   | 'search'
   | 'edit'
-  | 'newPost';
+  | 'newPost'
+  | 'businesses'
+  | 'business'
+  | 'events'
+  | 'event';
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -97,6 +116,12 @@ function Main() {
   const [boards, setBoards] = useState<{ slug: string; nameZh: string; nameEn: string }[]>([]);
   const [board, setBoard] = useState('');
   const [title, setTitle] = useState('');
+  const [biz, setBiz] = useState<Row | null>(null);
+  const [evt, setEvt] = useState<Row | null>(null);
+  const [meTab, setMeTab] = useState<'listings' | 'favorites'>('listings');
+  const [fav, setFav] = useState(false);
+  const [lead, setLead] = useState({ name: '', contact: '', message: '' });
+  const [checkin, setCheckin] = useState('');
   const fail = useCallback(
     (e: unknown) => setError(e instanceof Error ? e.message : t('common.error')),
     [t],
@@ -137,7 +162,10 @@ function Main() {
       if (screen === 'community') path = '/community/posts?';
       if (screen === 'messages') path = '/messages/conversations?';
       if (screen === 'conversation') path = `/messages/conversations/${conversation}?`;
-      if (screen === 'me') path = '/listings/mine?';
+      if (screen === 'me') path = meTab === 'favorites' ? '/me/favorites?' : '/listings/mine?';
+      if (screen === 'businesses') path = '/businesses?';
+      if (screen === 'events') path = '/events?';
+      if (screen === 'business' && biz) path = `/businesses/${biz.id}/reviews?`;
       if (!path) return;
       const page = await request<Page<Row>>(
         `${path}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
@@ -147,7 +175,7 @@ function Main() {
       if (screen === 'conversation')
         await request(`/messages/conversations/${conversation}/read`, { method: 'POST' });
     },
-    [screen, type, city, conversation],
+    [screen, type, city, conversation, meTab, biz],
   );
   useEffect(() => {
     if (['me', 'messages', 'conversation'].includes(screen) && !me) return;
@@ -163,8 +191,21 @@ function Main() {
     const images = await request<{ id: string }[]>(`/media/listings/${id}`);
     const token = await accessToken();
     setPhotos(images.map((p) => ({ ...p, token })));
+    if (me)
+      await request<{ favorited: boolean }>(`/me/favorites/listing/${id}`)
+        .then((r) => setFav(r.favorited))
+        .catch(() => setFav(false));
+    else setFav(false);
     setDetail(listing);
     go('detail');
+  };
+  const openBusiness = async (id: string) => {
+    setBiz(await request<Row>(`/businesses/${id}`));
+    go('business');
+  };
+  const openEvent = async (id: string) => {
+    setEvt(await request<Row>(`/events/${id}`));
+    go('event');
   };
   const rowCard = (row: Row) => (
     <View
@@ -179,13 +220,29 @@ function Main() {
       }}
     >
       <Button
-        title={row.title ?? row.peer?.displayName ?? row.body ?? row.id}
+        title={
+          row.title ??
+          (locale === 'zh' ? row.nameZh : row.nameEn) ??
+          row.peer?.displayName ??
+          row.body ??
+          row.id
+        }
         color="#b42336"
         onPress={() =>
           run(async () => {
             if (screen === 'messages') {
               setConversation(row.id);
               go('conversation');
+            } else if (screen === 'businesses') {
+              await openBusiness(row.id);
+            } else if (screen === 'events') {
+              await openEvent(row.id);
+            } else if (screen === 'me' && row.subjectId) {
+              if (row.subjectType === 'event') await openEvent(row.subjectId);
+              else if (row.subjectType === 'business') await openBusiness(row.subjectId);
+              else if (row.subjectType === 'article' && row.subjectMeta)
+                (setContent(await request<Row>(`/articles/${row.subjectMeta}`)), go('article'));
+              else await openListing(row.subjectId);
             } else if (screen === 'community') {
               const post = await request<Row & { comments: Row[] }>(`/community/posts/${row.id}`);
               setContent(post);
@@ -211,6 +268,24 @@ function Main() {
           {row.unread} {locale === 'zh' ? '条未读' : 'unread'}
         </Text>
       ) : null}
+      {screen === 'me' && row.subjectType && (
+        <Text>
+          {t(`me.favType`)}: {row.subjectType}
+        </Text>
+      )}
+      {screen === 'events' && row.startsAt && (
+        <Text>
+          {new Date(row.startsAt).toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-AU')}
+          {row.venue ? ` · ${row.venue}` : ''}
+          {row.goingCount !== undefined ? ` · ${row.goingCount}` : ''}
+        </Text>
+      )}
+      {screen === 'businesses' && (
+        <Text>
+          {row.category}
+          {row.suburb ? ` · ${row.suburb}` : ''}
+        </Text>
+      )}
       {screen === 'me' && row.status && (
         <>
           <Text>{t(`listing.status.${row.status}`)}</Text>
@@ -277,7 +352,18 @@ function Main() {
           style={{ maxHeight: 50 }}
           contentContainerStyle={{ gap: 4, paddingHorizontal: 12 }}
         >
-          {(['browse', 'news', 'community', 'messages', 'me', 'publish'] as Screen[]).map((s) => (
+          {(
+            [
+              'browse',
+              'news',
+              'community',
+              'businesses',
+              'events',
+              'messages',
+              'me',
+              'publish',
+            ] as Screen[]
+          ).map((s) => (
             <Button
               key={s}
               title={t(
@@ -337,6 +423,15 @@ function Main() {
           {screen === 'me' && me && (
             <>
               <Text>{me.displayName}</Text>
+              <Choices
+                value={meTab}
+                values={['listings', 'favorites']}
+                onChange={(s) => {
+                  setRows([]);
+                  setMeTab(s as typeof meTab);
+                }}
+                render={(s) => (s === 'listings' ? t('me.myListings') : t('me.favorites'))}
+              />
               <Button
                 title={t('nav.logout')}
                 onPress={() =>
@@ -577,6 +672,28 @@ function Main() {
                   }}
                 />
               )}
+              {me && me.id !== detail.owner.id && (
+                <Button
+                  title={fav ? '★ ' + t('me.favorites') : '☆ ' + t('me.favorites')}
+                  onPress={() =>
+                    run(async () => {
+                      if (fav)
+                        await request(`/me/favorites/listing/${detail.id}`, {
+                          method: 'DELETE',
+                        });
+                      else
+                        await request('/me/favorites', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            subjectType: 'listing',
+                            subjectId: detail.id,
+                          }),
+                        });
+                      setFav(!fav);
+                    })
+                  }
+                />
+              )}
               <Button
                 title={t('report.title')}
                 onPress={() =>
@@ -594,6 +711,118 @@ function Main() {
                 }
               />
               <Text>{t('listing.safetyTip')}</Text>
+            </>
+          )}
+          {screen === 'business' && biz && (
+            <>
+              <Text style={{ fontSize: 24, fontWeight: 'bold' }}>
+                {locale === 'zh' ? (biz.nameZh ?? biz.nameEn) : (biz.nameEn ?? biz.nameZh)}
+              </Text>
+              <Text>
+                {biz.category}
+                {biz.suburb ? ` · ${biz.suburb}` : ''}
+              </Text>
+              <Text>{biz.body}</Text>
+              {me && (
+                <>
+                  <Text>{t('businesses.contactBusiness')}</Text>
+                  <TextInput
+                    placeholder={t('businesses.leadName')}
+                    value={lead.name}
+                    onChangeText={(v) => setLead({ ...lead, name: v })}
+                    style={{ borderWidth: 1, borderColor: '#ddd', padding: 12 }}
+                  />
+                  <TextInput
+                    placeholder={t('businesses.leadContact')}
+                    value={lead.contact}
+                    onChangeText={(v) => setLead({ ...lead, contact: v })}
+                    style={{ borderWidth: 1, borderColor: '#ddd', padding: 12 }}
+                  />
+                  <TextInput
+                    placeholder={t('businesses.leadMessage')}
+                    value={lead.message}
+                    onChangeText={(v) => setLead({ ...lead, message: v })}
+                    multiline
+                    style={{ borderWidth: 1, borderColor: '#ddd', padding: 12, minHeight: 80 }}
+                  />
+                  <Button
+                    title={t('businesses.send')}
+                    disabled={busy}
+                    onPress={() =>
+                      run(async () => {
+                        await request(`/businesses/${biz.id}/leads`, {
+                          method: 'POST',
+                          body: JSON.stringify(lead),
+                        });
+                        setLead({ name: '', contact: '', message: '' });
+                        setError(t('businesses.leadSent'));
+                      })
+                    }
+                  />
+                </>
+              )}
+              {rows.map((r) => (
+                <View
+                  key={r.id}
+                  style={{ padding: 10, borderWidth: 1, borderColor: '#eee', borderRadius: 8 }}
+                >
+                  <Text>
+                    {'★'.repeat(r.rating ?? 0)} {r.author?.displayName}
+                  </Text>
+                  <Text>{r.body}</Text>
+                </View>
+              ))}
+            </>
+          )}
+          {screen === 'event' && evt && (
+            <>
+              <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{evt.title}</Text>
+              <Text>
+                {evt.startsAt ? new Date(evt.startsAt).toLocaleString() : ''}
+                {evt.venue ? ` · ${evt.venue}` : ''}
+              </Text>
+              <Text>{evt.body}</Text>
+              {me && (
+                <Button
+                  title={evt.viewerRsvp ? t('events.cancelRsvp') : t('events.rsvp')}
+                  onPress={() =>
+                    run(async () => {
+                      if (evt.viewerRsvp)
+                        await request(`/events/${evt.id}/rsvp`, { method: 'DELETE' });
+                      else await request(`/events/${evt.id}/rsvp`, { method: 'POST' });
+                      await openEvent(evt.id);
+                    })
+                  }
+                />
+              )}
+              {evt.viewerRsvp === 'going' && evt.checkinCode && (
+                <Text style={{ fontSize: 20, fontFamily: 'monospace' }}>
+                  {t('events.checkinCode')}: {evt.checkinCode}
+                </Text>
+              )}
+              {evt.viewerIsOrganizer && (
+                <>
+                  <TextInput
+                    placeholder={t('events.checkinPlaceholder')}
+                    value={checkin}
+                    onChangeText={setCheckin}
+                    style={{ borderWidth: 1, borderColor: '#ddd', padding: 12 }}
+                  />
+                  <Button
+                    title={t('events.checkinSubmit')}
+                    onPress={() =>
+                      run(async () => {
+                        const r = await request<{ user: { displayName: string } }>(
+                          `/events/${evt.id}/checkin`,
+                          { method: 'POST', body: JSON.stringify({ code: checkin }) },
+                        );
+                        setError(`${t('events.checkinOk')}: ${r.user.displayName}`);
+                        setCheckin('');
+                      })
+                    }
+                  />
+                </>
+              )}
             </>
           )}
           {(screen === 'article' || screen === 'post') && content && (
@@ -654,8 +883,17 @@ function Main() {
               />
             </>
           )}
-          {['browse', 'news', 'community', 'messages', 'me', 'search'].includes(screen) &&
-            rows.map(rowCard)}
+          {[
+            'browse',
+            'news',
+            'community',
+            'messages',
+            'me',
+            'search',
+            'businesses',
+            'events',
+            'business',
+          ].includes(screen) && rows.map(rowCard)}
           {next && <Button title={t('listing.loadMore')} onPress={() => run(() => load(next))} />}
         </ScrollView>
       </KeyboardAvoidingView>
