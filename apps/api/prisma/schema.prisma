@@ -1030,6 +1030,8 @@ model WeekendSource {
   name            String
   url             String
   format          String
+  cityId          String?   @map("city_id") @db.Uuid
+  category        String    @default("general") // general | family | social | market | festival
   enabled         Boolean   @default(false)
   intervalMinutes Int       @default(360) @map("interval_minutes")
   nextRunAt       DateTime  @default(now()) @map("next_run_at")
@@ -1051,6 +1053,8 @@ model WeekendEvent {
   sourceUrl   String        @map("source_url")
   title       String
   summary     String        @default("")
+  cityId      String?       @map("city_id") @db.Uuid
+  category    String        @default("general") // general | family | social | market | festival
   suburb      String        @default("")
   venue       String        @default("")
   startsAt    DateTime?     @map("starts_at")
@@ -1077,6 +1081,66 @@ model WeekendSave {
 
   @@id([userId, eventId])
   @@map("weekend_saves")
+}
+
+// ---------- Content pipeline (§pulse: auto-collected feeds + daily metrics) ----------
+
+model FeedSource {
+  id              String   @id
+  name            String
+  url             String
+  format          String   // rss | json | adapter name (frankfurter, openmeteo, fuelcheck)
+  category        String   // news | deal | guide | notice | metric
+  cityId          String?  @map("city_id") @db.Uuid
+  autoPublish     Boolean  @default(false) @map("auto_publish")
+  enabled         Boolean  @default(false)
+  intervalMinutes Int      @default(360) @map("interval_minutes")
+  nextRunAt       DateTime @default(now()) @map("next_run_at")
+  leaseUntil      DateTime? @map("lease_until")
+  lastRunAt       DateTime? @map("last_run_at")
+  lastSuccessAt   DateTime? @map("last_success_at")
+  lastError       String?  @map("last_error")
+  failures        Int      @default(0)
+  lastCount       Int      @default(0) @map("last_count")
+
+  items           FeedItem[]
+
+  @@map("feed_sources")
+}
+
+model FeedItem {
+  id          String    @id @default(uuid()) @db.Uuid
+  fingerprint String    @unique
+  sourceId    String?   @map("source_id")
+  source      FeedSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  category    String    // news | deal | guide | notice
+  title       String
+  summary     String    @default("")
+  imageUrl    String?   @map("image_url")
+  sourceName  String    @map("source_name")
+  sourceUrl   String    @map("source_url")
+  cityId      String?   @map("city_id") @db.Uuid
+  status      String    @default("pending") // pending | published | rejected
+  riskFlags   String[]  @map("risk_flags")
+  publishedAt DateTime? @map("published_at")
+  reviewedAt  DateTime? @map("reviewed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, category, publishedAt(sort: Desc)])
+  @@map("feed_items")
+}
+
+// Latest-value + history store for structured metrics (rates, weather, fuel, alerts).
+model PulseMetric {
+  id         String   @id @default(uuid()) @db.Uuid
+  kind       String   // rate_aud_cny | weather | fuel | alert
+  cityId     String?  @map("city_id") @db.Uuid
+  payload    Json
+  observedAt DateTime @default(now()) @map("observed_at")
+
+  @@index([kind, cityId, observedAt(sort: Desc)])
+  @@map("pulse_metrics")
 }
 
 // ---------- Platform config (§5.12 配置) ----------

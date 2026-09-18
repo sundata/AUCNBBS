@@ -15,6 +15,8 @@ export const eventInput = z.object({
   summary: z.string().trim().max(800).default(''),
   sourceName: z.string().trim().min(1).max(120),
   sourceUrl: publicUrl,
+  cityId: z.string().uuid().nullable().default(null),
+  category: z.enum(['general', 'family', 'social', 'market', 'festival']).default('general'),
   suburb: z.string().trim().max(100).default(''),
   venue: z.string().trim().max(200).default(''),
   startsAt: z.string().datetime({ offset: true }).nullable().default(null),
@@ -42,11 +44,15 @@ export const reviewInput = eventInput
     if (v.startsAt && v.endsAt && new Date(v.endsAt) <= new Date(v.startsAt))
       ctx.addIssue({ code: 'custom', message: 'End must be after start' });
   });
+export const WEEKEND_CATEGORIES = ['general', 'family', 'social', 'market', 'festival'] as const;
+
 export const sourceInput = z.object({
   id: z.string().regex(/^[a-z0-9-]{1,60}$/),
   name: z.string().min(1).max(120),
   url: publicUrl,
   format: z.enum(['rss', 'json']),
+  cityId: z.string().uuid().nullable().default(null),
+  category: z.enum(WEEKEND_CATEGORIES).default('general'),
   enabled: z.boolean().default(false),
   intervalMinutes: z.number().int().min(60).max(10080).default(360),
 });
@@ -93,13 +99,13 @@ export function parseFeed(body: string, format: string, sourceName: string) {
   });
 }
 
-/** Convert a Sydney calendar date at midnight to UTC, including DST transitions. */
-export function sydneyMidnight(date: string): Date {
+/** Convert a local calendar date at midnight to UTC, including DST transitions. */
+export function localMidnight(date: string, timeZone = 'Australia/Sydney'): Date {
   const target = Date.parse(`${date}T00:00:00Z`);
   let guess = target;
   for (let i = 0; i < 3; i++) {
     const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Australia/Sydney',
+      timeZone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -114,9 +120,9 @@ export function sydneyMidnight(date: string): Date {
   }
   return new Date(guess);
 }
-export function weekendRange(now = new Date()) {
+export function weekendRange(now = new Date(), timeZone = 'Australia/Sydney') {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Australia/Sydney',
+    timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -125,9 +131,9 @@ export function weekendRange(now = new Date()) {
   const d = new Date(`${p.year}-${p.month}-${p.day}T00:00:00Z`);
   const day = d.getUTCDay();
   d.setUTCDate(d.getUTCDate() + (day === 0 ? -1 : 6 - day));
-  const from = sydneyMidnight(d.toISOString().slice(0, 10));
+  const from = localMidnight(d.toISOString().slice(0, 10), timeZone);
   d.setUTCDate(d.getUTCDate() + 2);
-  return { from, to: sydneyMidnight(d.toISOString().slice(0, 10)) };
+  return { from, to: localMidnight(d.toISOString().slice(0, 10), timeZone) };
 }
 export function calendar(event: {
   id: string;

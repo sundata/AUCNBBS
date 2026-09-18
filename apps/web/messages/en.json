@@ -26,7 +26,8 @@
     "admin": "Admin",
     "weekend": "Weekends",
     "businesses": "Businesses",
-    "events": "Events"
+    "events": "Events",
+    "pulse": "Pulse"
   },
   "home": {
     "headlines": "Headlines",
@@ -569,6 +570,22 @@
     "claim": {
       "approved": "Approve claim",
       "rejected": "Decline"
+    },
+    "pulse": {
+      "title": "Content pipeline (Pulse)",
+      "collectorOff": "Collector disabled: set PULSE_COLLECTOR_ENABLED=true and PULSE_SOURCES_JSON on the API",
+      "sources": "Sources",
+      "noSources": "No configured sources",
+      "auto": "auto-publish",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "queue": "Review queue",
+      "pending": "Pending",
+      "published": "Published",
+      "rejected": "Rejected",
+      "publish": "Publish",
+      "reject": "Reject",
+      "empty": "No items"
     }
   },
   "media": {
@@ -902,5 +919,25 @@
     "title": "Map location",
     "openExternal": "Open in Google Maps",
     "viewOnMap": "View on map"
+  },
+  "pulse": {
+    "today": "Today in Australia",
+    "all": "View all",
+    "title": "Australia Pulse",
+    "subtitle": "Auto-collected local news, deals and guides, updated daily",
+    "categories": "Categories",
+    "catAll": "All",
+    "cat": {
+      "news": "News",
+      "deal": "Deals",
+      "guide": "Guides",
+      "notice": "Alerts"
+    },
+    "rate": "AUD rate",
+    "weather": "Weather",
+    "fuel": "Fuel today",
+    "rain": "Rain",
+    "upcoming": "Coming up",
+    "empty": "Nothing yet — content updates automatically"
   }
 }

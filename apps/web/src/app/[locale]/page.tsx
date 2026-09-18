@@ -5,6 +5,7 @@ import { cityName, formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { ListingCard } from '@/components/listing-card';
 import { AdSlot } from '@/components/ad-slot';
+import { PulseDashboard } from '@/components/pulse-dashboard';
 import { Empty, Section } from '@/components/section';
 
 export default async function HomePage({
@@ -51,6 +52,7 @@ export default async function HomePage({
         </div>
       </div>
       <AdSlot placement="home" cityId={city?.id} label={t('sponsored')} />
+      <PulseDashboard citySlug={city?.slug} />
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Section title={t('headlines')} href="/news" more={t('more')}>

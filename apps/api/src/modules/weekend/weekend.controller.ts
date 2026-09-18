@@ -30,6 +30,8 @@ const browse = z.object({
   family: z.enum(['true', 'false']).optional(),
   indoor: z.enum(['true', 'false']).optional(),
   suburb: z.string().trim().max(100).optional(),
+  city: z.string().trim().max(60).optional(),
+  category: z.enum(['general', 'family', 'social', 'market', 'festival']).optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
 });
 function editor(u: AccessTokenPayload) {
@@ -41,7 +43,8 @@ export class WeekendController {
   @Get('events')
   async events(@Query(new ZodPipe(browse)) q: z.infer<typeof browse>) {
     const now = new Date();
-    const range = weekendRange(now);
+    const city = q.city ? await this.prisma.city.findUnique({ where: { slug: q.city } }) : null;
+    const range = weekendRange(now, city?.timezone ?? 'Australia/Sydney');
     const where = {
       status: 'published',
       endsAt: { gt: now },
@@ -50,6 +53,8 @@ export class WeekendController {
       ...(q.free === 'true' ? { priceMinor: 0 } : {}),
       ...(q.family === 'true' ? { family: true } : {}),
       ...(q.indoor === 'true' ? { indoor: true } : {}),
+      ...(q.category ? { category: q.category } : {}),
+      ...(city ? { cityId: city.id } : {}),
       ...(q.suburb ? { suburb: { equals: q.suburb, mode: 'insensitive' as const } } : {}),
     };
     const [items, total, suburbs] = await Promise.all([
@@ -61,7 +66,7 @@ export class WeekendController {
       }),
       this.prisma.weekendEvent.count({ where }),
       this.prisma.weekendEvent.findMany({
-        where: { status: 'published', endsAt: { gt: now } },
+        where: { status: 'published', endsAt: { gt: now }, ...(city ? { cityId: city.id } : {}) },
         distinct: ['suburb'],
         select: { suburb: true },
         orderBy: { suburb: 'asc' },
@@ -73,7 +78,7 @@ export class WeekendController {
       page: q.page,
       suburbs: suburbs.map((s) => s.suburb),
       weekend: range,
-      timeZone: 'Australia/Sydney',
+      timeZone: city?.timezone ?? 'Australia/Sydney',
     };
   }
   @Get('events/:id/calendar')

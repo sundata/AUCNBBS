@@ -32,6 +32,17 @@ const PRICE_FLOORS: Record<string, { min: number; flag: string }> = {
   job: { min: 0, flag: 'salary_floor' },
 };
 
+/** Sensitive-word + scam-pattern flags for any user/external text (listings, feed items). */
+export async function screenText(prisma: PrismaService, text: string): Promise<string[]> {
+  const flags = new Set<string>();
+  const cfg = await prisma.appConfig.findUnique({ where: { key: 'sensitive_words' } });
+  const words = Array.isArray(cfg?.value) ? (cfg.value as string[]) : DEFAULT_SENSITIVE_WORDS;
+  const lower = text.toLowerCase();
+  for (const w of words) if (w && lower.includes(w.toLowerCase())) flags.add('sensitive_word');
+  for (const { flag, re } of SCAM_PATTERNS) if (re.test(text)) flags.add(flag);
+  return [...flags];
+}
+
 export async function riskScreenListing(
   prisma: PrismaService,
   input: {
@@ -43,15 +54,7 @@ export async function riskScreenListing(
     salaryMinMinor?: number | null;
   },
 ): Promise<string[]> {
-  const flags = new Set<string>();
-  const text = `${input.title}\n${input.body}`;
-
-  const cfg = await prisma.appConfig.findUnique({ where: { key: 'sensitive_words' } });
-  const words = Array.isArray(cfg?.value) ? (cfg.value as string[]) : DEFAULT_SENSITIVE_WORDS;
-  const lower = text.toLowerCase();
-  for (const w of words) if (w && lower.includes(w.toLowerCase())) flags.add('sensitive_word');
-
-  for (const { flag, re } of SCAM_PATTERNS) if (re.test(text)) flags.add(flag);
+  const flags = new Set<string>(await screenText(prisma, `${input.title}\n${input.body}`));
 
   const floor = PRICE_FLOORS[input.type];
   const price = input.type === 'job' ? input.salaryMinMinor : input.priceMinor;

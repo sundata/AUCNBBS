@@ -11,6 +11,7 @@ import { CitySelect } from './city-select';
 const NAV = [
   { href: '/', key: 'home' },
   { href: '/weekend', key: 'weekend' },
+  { href: '/pulse', key: 'pulse' },
   { href: '/news', key: 'news' },
   { href: '/community', key: 'community' },
   { href: '/housing', key: 'housing' },

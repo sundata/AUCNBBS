@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { api, apiBase, qs } from '@/lib/api';
+import { api, apiBase, qs, type CityDto } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { Link } from '@/i18n/routing';
 
@@ -11,6 +11,7 @@ export interface WeekendEvent {
   summary: string;
   sourceName: string;
   sourceUrl: string;
+  category: string;
   suburb: string;
   venue: string;
   startsAt: string | null;
@@ -29,6 +30,7 @@ interface Result {
   suburbs: string[];
   weekend: { from: string; to: string };
 }
+const CATS = ['general', 'family', 'social', 'market', 'festival'] as const;
 export function WeekendGuide() {
   const zh = useLocale() === 'zh';
   const { me } = useAuth();
@@ -37,6 +39,9 @@ export function WeekendGuide() {
   const [family, setFamily] = useState(false);
   const [indoor, setIndoor] = useState(false);
   const [suburb, setSuburb] = useState('');
+  const [city, setCity] = useState('');
+  const [category, setCategory] = useState('');
+  const [cities, setCities] = useState<CityDto[]>([]);
   const [page, setPage] = useState(1);
   const [savedOnly, setSavedOnly] = useState(false);
   const [saved, setSaved] = useState<WeekendEvent[]>([]);
@@ -68,7 +73,7 @@ export function WeekendGuide() {
     setLoading(true);
     setError('');
     api<Result>(
-      `/weekend/events${qs({ period, free: String(free), family: String(family), indoor: String(indoor), suburb, page })}`,
+      `/weekend/events${qs({ period, free: String(free), family: String(family), indoor: String(indoor), suburb, city, category, page })}`,
     )
       .then((r) => {
         if (active) setData(r);
@@ -83,7 +88,12 @@ export function WeekendGuide() {
     return () => {
       active = false;
     };
-  }, [period, free, family, indoor, suburb, page, zh]);
+  }, [period, free, family, indoor, suburb, city, category, page, zh]);
+  useEffect(() => {
+    void api<CityDto[]>('/cities')
+      .then(setCities)
+      .catch(() => setCities([]));
+  }, []);
   useEffect(() => {
     void loadSaved().catch(() => setError(zh ? '收藏加载失败' : 'Could not load saved events'));
   }, [loadSaved, zh]);
@@ -127,6 +137,53 @@ export function WeekendGuide() {
             >
               <option value="weekend">{zh ? '本周末' : 'This weekend'}</option>
               <option value="upcoming">{zh ? '所有即将举行' : 'All upcoming'}</option>
+            </select>
+          </label>
+          <label className="space-x-2">
+            {zh ? '城市' : 'City'}
+            <select
+              value={city}
+              onChange={(e) => {
+                setCity(e.target.value);
+                setSuburb('');
+                reset();
+              }}
+              className="border rounded-lg p-2"
+            >
+              <option value="">{zh ? '全部城市' : 'All cities'}</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {zh ? c.nameZh : c.nameEn}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="space-x-2">
+            {zh ? '类型' : 'Type'}
+            <select
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                reset();
+              }}
+              className="border rounded-lg p-2"
+            >
+              <option value="">{zh ? '全部类型' : 'All types'}</option>
+              {CATS.map((c) => (
+                <option key={c} value={c}>
+                  {zh
+                    ? (
+                        {
+                          general: '综合',
+                          family: '亲子',
+                          social: '社交',
+                          market: '集市',
+                          festival: '节庆',
+                        } as const
+                      )[c]
+                    : c[0].toUpperCase() + c.slice(1)}
+                </option>
+              ))}
             </select>
           </label>
           <label className="space-x-2">
@@ -236,6 +293,20 @@ export function WeekendGuide() {
                   )}
                   <p className="mt-2">{event.venue}</p>
                   <div className="flex flex-wrap gap-2 mt-3 text-sm">
+                    {event.category && event.category !== 'general' && (
+                      <span className="bg-purple-50 text-purple-900 rounded px-2 py-1">
+                        {zh
+                          ? (
+                              {
+                                family: '亲子',
+                                social: '社交',
+                                market: '集市',
+                                festival: '节庆',
+                              } as Record<string, string>
+                            )[event.category]
+                          : event.category}
+                      </span>
+                    )}
                     {event.family && (
                       <span className="bg-blue-50 text-blue-900 rounded px-2 py-1">
                         {zh ? '亲子' : 'Family'}

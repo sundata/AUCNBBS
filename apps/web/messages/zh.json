@@ -26,7 +26,8 @@
     "admin": "管理后台",
     "weekend": "周末去哪儿",
     "businesses": "商家",
-    "events": "活动"
+    "events": "活动",
+    "pulse": "澳洲脉搏"
   },
   "home": {
     "headlines": "今日头条",
@@ -569,6 +570,22 @@
     "claim": {
       "approved": "批准认领",
       "rejected": "拒绝"
+    },
+    "pulse": {
+      "title": "内容采集（Pulse）",
+      "collectorOff": "采集器未启用：在 API 环境设置 PULSE_COLLECTOR_ENABLED=true 与 PULSE_SOURCES_JSON",
+      "sources": "数据源",
+      "noSources": "暂无配置的数据源",
+      "auto": "自动发布",
+      "enabled": "已启用",
+      "disabled": "已停用",
+      "queue": "待审条目",
+      "pending": "待审",
+      "published": "已发布",
+      "rejected": "已拒绝",
+      "publish": "发布",
+      "reject": "拒绝",
+      "empty": "暂无条目"
     }
   },
   "media": {
@@ -902,5 +919,25 @@
     "title": "地图位置",
     "openExternal": "在 Google 地图中打开",
     "viewOnMap": "在地图中查看"
+  },
+  "pulse": {
+    "today": "今日澳洲",
+    "all": "查看全部",
+    "title": "澳洲脉搏",
+    "subtitle": "自动采集的中澳本地资讯、折扣与指南，每日更新",
+    "categories": "分类",
+    "catAll": "全部",
+    "cat": {
+      "news": "新闻",
+      "deal": "折扣",
+      "guide": "指南",
+      "notice": "通知预警"
+    },
+    "rate": "澳元汇率",
+    "weather": "天气",
+    "fuel": "今日油价",
+    "rain": "降水",
+    "upcoming": "近期活动",
+    "empty": "暂无内容，稍后自动更新"
   }
 }

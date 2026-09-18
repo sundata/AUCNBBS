@@ -1,4 +1,5 @@
 import { WeekendModule } from './modules/weekend/weekend.module';
+import { PulseModule } from './modules/pulse/pulse.module';
 import { AppealsModule } from './modules/appeals/appeals.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
@@ -62,6 +63,7 @@ import { UsersModule } from './modules/users/users.module';
     EventsModule,
     AdsModule,
     WeekendModule,
+    PulseModule,
   ],
   controllers: [HealthController],
   // THROTTLER_DISABLED is a test-system escape hatch; never set it in production.

@@ -43,12 +43,17 @@ export class WeekendService implements OnModuleInit, OnModuleDestroy {
     this.stopped = true;
     if (this.timer) clearInterval(this.timer);
   }
-  async importRows(sourceId: string, rows: z.infer<typeof eventInput>[]) {
+  async importRows(
+    source: { id: string; cityId: string | null; category: string },
+    rows: z.infer<typeof eventInput>[],
+  ) {
     const result = await this.prisma.weekendEvent.createMany({
       skipDuplicates: true,
       data: rows.map((row) => ({
         ...row,
-        sourceId,
+        sourceId: source.id,
+        cityId: row.cityId ?? source.cityId,
+        category: row.category === 'general' ? source.category : row.category,
         fingerprint: fingerprint(row.sourceUrl, row.startsAt),
         // A feed is not an editorial introduction: require the reviewer to write it.
         summary: '',
@@ -87,7 +92,7 @@ export class WeekendService implements OnModuleInit, OnModuleDestroy {
         if (!claimed.count) continue;
         try {
           const rows = parseFeed(await fetchFeed(source.url), source.format, source.name);
-          const count = await this.importRows(source.id, rows);
+          const count = await this.importRows(source, rows);
           await this.prisma.weekendSource.updateMany({
             where: { id: source.id, leaseUntil },
             data: {

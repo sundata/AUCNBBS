@@ -21,8 +21,15 @@ interface Page<T> {
 }
 interface City {
   id: string;
+  slug: string;
   nameZh: string;
   nameEn: string;
+}
+interface PulseDash {
+  metrics: { kind: string; payload: unknown }[];
+  alerts: { id: string; title: string; sourceUrl: string }[];
+  events: { id: string; title: string }[];
+  newListings: number;
 }
 interface Listing extends EditableListing {
   status: ListingStatus;
@@ -393,6 +400,7 @@ function Main() {
           )}
           {screen === 'browse' && (
             <>
+              <PulseCard citySlug={cities.find((c) => c.id === city)?.slug ?? ''} t={t} />
               <Choices
                 value={type}
                 values={['housing', 'job', 'item', 'service']}
@@ -898,5 +906,66 @@ function Main() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+/** "今日澳洲" strip on the browse screen: FX rate, weather, alerts, events. */
+function PulseCard({ citySlug, t }: { citySlug: string; t: (k: string) => string }) {
+  const [dash, setDash] = useState<PulseDash | null>(null);
+  useEffect(() => {
+    let active = true;
+    request<PulseDash>(`/pulse/dashboard${citySlug ? `?city=${citySlug}` : ''}`)
+      .then((d) => {
+        if (active) setDash(d);
+      })
+      .catch(() => {
+        if (active) setDash(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [citySlug]);
+  if (!dash || (!dash.metrics.length && !dash.alerts.length && !dash.events.length)) return null;
+  const rate = dash.metrics.find((m) => m.kind === 'exchange_rate');
+  const weather = dash.metrics.find((m) => m.kind === 'weather');
+  const cny = (rate?.payload as { rates?: Record<string, number> } | undefined)?.rates?.CNY ?? null;
+  const cur =
+    (weather?.payload as { current?: { temp?: number; code?: number } } | undefined)?.current ??
+    null;
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: '#d9e1e3',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 12,
+        backgroundColor: '#fff',
+        gap: 4,
+      }}
+      accessibilityLabel={t('pulse.today')}
+    >
+      <Text style={{ fontWeight: '600', fontSize: 16 }}>{t('pulse.today')}</Text>
+      {cny != null && (
+        <Text>
+          {t('pulse.rate')}: 1 AUD = {cny} CNY
+        </Text>
+      )}
+      {cur?.temp != null && (
+        <Text>
+          {t('pulse.weather')}: {cur.temp}°C
+        </Text>
+      )}
+      {dash.alerts.map((a) => (
+        <Text key={a.id} style={{ color: '#9e3a2b' }}>
+          ⚠ {a.title}
+        </Text>
+      ))}
+      {dash.events.length > 0 && (
+        <Text style={{ color: '#55677a' }}>
+          {t('pulse.upcoming')}: {dash.events.map((e) => e.title).join(' · ')}
+        </Text>
+      )}
+    </View>
   );
 }

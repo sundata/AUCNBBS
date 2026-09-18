@@ -1275,3 +1275,162 @@ describe.sequential('round-4 hardening', () => {
     }
   });
 });
+
+describe.sequential('pulse pipeline and weekend multi-city', () => {
+  let feedItemId = '';
+  let feedItemUpdatedAt = '';
+  let sydneyCity = '';
+  beforeAll(async () => {
+    sydneyCity = (
+      await prisma.city.create({
+        data: {
+          slug: `syd-${randomUUID()}`,
+          state: 'NSW',
+          nameZh: '悉尼',
+          nameEn: 'Sydney',
+          timezone: 'Australia/Sydney',
+        },
+      })
+    ).id;
+    await prisma.feedSource.create({
+      data: {
+        id: `test-src-${randomUUID().slice(0, 8)}`,
+        name: 'Test Feed',
+        url: 'https://example.com/feed',
+        format: 'rss',
+        category: 'news',
+        enabled: false,
+      },
+    });
+    const src = await prisma.feedSource.findFirst({ where: { name: 'Test Feed' } });
+    const item = await prisma.feedItem.create({
+      data: {
+        fingerprint: `test-${randomUUID()}`,
+        sourceId: src!.id,
+        category: 'news',
+        title: 'Test news item for pulse feed',
+        summary: 'Summary of the test news item.',
+        sourceName: 'Test Feed',
+        sourceUrl: 'https://example.com/item-1',
+        status: 'pending',
+        publishedAt: new Date(),
+      },
+    });
+    feedItemId = item.id;
+    feedItemUpdatedAt = item.updatedAt.toISOString();
+    await prisma.pulseMetric.create({
+      data: {
+        kind: 'exchange_rate',
+        payload: { base: 'AUD', rates: { CNY: 4.72 } },
+      },
+    });
+    await prisma.weekendEvent.create({
+      data: {
+        fingerprint: `wk-${randomUUID()}`,
+        sourceName: 'Manual',
+        sourceUrl: 'https://example.com/ev',
+        title: 'Sydney family picnic day',
+        summary: 'A family friendly picnic.',
+        cityId: sydneyCity,
+        category: 'family',
+        suburb: 'Parramatta',
+        venue: 'Park',
+        startsAt: new Date(Date.now() + 86400000),
+        endsAt: new Date(Date.now() + 2 * 86400000),
+        status: 'published',
+      },
+    });
+  });
+  afterAll(async () => {
+    await prisma.weekendEvent.deleteMany({ where: { fingerprint: { startsWith: 'wk-' } } });
+    await prisma.pulseMetric.deleteMany({ where: { kind: 'exchange_rate' } });
+    await prisma.feedItem.deleteMany({ where: { fingerprint: { startsWith: 'test-' } } });
+    await prisma.feedSource.deleteMany({ where: { name: 'Test Feed' } });
+    await prisma.article.deleteMany({ where: { slug: { startsWith: 'daily-' } } });
+    await prisma.appConfig.deleteMany({ where: { key: 'digest_author_id' } });
+    await prisma.user.deleteMany({ where: { displayName: 'AUCN 编辑部' } });
+    if (sydneyCity) await prisma.city.delete({ where: { id: sydneyCity } });
+  });
+
+  it('serves the dashboard with metrics and upcoming events', async () => {
+    const res = await call('/pulse/dashboard');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.metrics.some((m: { kind: string }) => m.kind === 'exchange_rate')).toBe(true);
+    expect(body.newListings).toBeGreaterThanOrEqual(0);
+    const syd = await prisma.city.findUnique({ where: { id: sydneyCity } });
+    const cityRes = await call(`/pulse/dashboard?city=${syd!.slug}`);
+    expect(cityRes.status).toBe(200);
+    const cityBody = await cityRes.json();
+    expect(cityBody.events.some((e: { title: string }) => e.title.includes('picnic'))).toBe(true);
+  });
+
+  it('publishes a pending feed item via editor review and serves it publicly', async () => {
+    // Members cannot reach the review endpoints. Fresh member — the shared
+    // member tokens were intentionally revoked/banned by earlier tests.
+    const member = await fixture(prisma, 'member');
+    users.push(member);
+    await challenge(prisma, member.email);
+    const login = await call('/auth/otp/verify', '', 'POST', {
+      email: member.email,
+      code: '123456',
+    });
+    expect(login.status).toBe(201);
+    const memberToken = (await login.json()).accessToken as string;
+    expect(
+      (
+        await call(`/pulse/admin/items/${feedItemId}`, memberToken, 'PATCH', {
+          title: 'Valid title here',
+          summary: 'x',
+          status: 'published',
+          updatedAt: feedItemUpdatedAt,
+        })
+      ).status,
+    ).toBe(403);
+    const res = await call(`/pulse/admin/items/${feedItemId}`, editorToken, 'PATCH', {
+      title: 'Test news item for pulse feed',
+      summary: 'Summary of the test news item.',
+      status: 'published',
+      updatedAt: feedItemUpdatedAt,
+    });
+    expect(res.status).toBe(200);
+    const feed = await (await call('/pulse/feed?category=news')).json();
+    expect(feed.items.some((i: { id: string }) => i.id === feedItemId)).toBe(true);
+    // Source management: non-staff rejected.
+    expect((await call('/pulse/admin/sources', memberToken)).status).toBe(403);
+    const sources = await (await call('/pulse/admin/sources', editorToken)).json();
+    expect(sources.items.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('filters weekend events by city and category', async () => {
+    const syd = await prisma.city.findUnique({ where: { id: sydneyCity } });
+    const res = await call(`/weekend/events?period=upcoming&city=${syd!.slug}&category=family`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.items.length).toBe(1);
+    expect(body.items[0].title).toContain('picnic');
+    // Wrong category excludes it.
+    const none = await (
+      await call(`/weekend/events?period=upcoming&city=${syd!.slug}&category=social`)
+    ).json();
+    expect(none.items.length).toBe(0);
+  });
+
+  it('writes a daily digest article once per Sydney day', async () => {
+    const { PulseService } = await import('../src/modules/pulse/pulse.service');
+    const svc = new PulseService(prisma as never);
+    // 09:00 Sydney == 23:00 UTC previous day (AEST, no DST in Sept).
+    const nineAmSydney = new Date(Date.UTC(2026, 8, 17, 23, 0));
+    await svc.maybeWriteDigest(nineAmSydney);
+    const zh = await prisma.article.findFirst({
+      where: { slug: { startsWith: 'daily-2026-09-18' } },
+    });
+    expect(zh).toBeTruthy();
+    expect(zh!.status).toBe('published');
+    // Second run is idempotent.
+    await svc.maybeWriteDigest(nineAmSydney);
+    expect(
+      await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
+    ).toBe(2); // zh + en
+  });
+});

@@ -106,6 +106,32 @@ export interface PostDetail extends PostSummary {
   poll: PollDto | null;
   comments: CommentDto[];
 }
+export interface PulseMetric {
+  kind: string;
+  cityId: string | null;
+  payload: unknown;
+  observedAt: string;
+}
+export interface PulseFeedItem {
+  id: string;
+  category: string;
+  title: string;
+  summary: string;
+  sourceName: string;
+  sourceUrl: string;
+  imageUrl: string | null;
+  publishedAt: string;
+}
+export interface PulseDashboard {
+  city: CityDto | null;
+  metrics: PulseMetric[];
+  alerts: PulseFeedItem[];
+  events: { id: string; title: string; startsAt: string | null }[];
+  hotPosts: { id: string; title: string; commentCount: number; viewCount: number }[];
+  newListings: number;
+  news: PulseFeedItem[];
+  generatedAt: string;
+}
 export interface HomeFeed {
   city: { id: string; slug: string; nameZh: string; nameEn: string } | null;
   headlines: ArticleSummary[];

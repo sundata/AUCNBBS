@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { api, qs, type Page } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
+import { PulseAdmin } from './pulse-admin';
 interface Report {
   id: string;
   reference: string;
@@ -524,6 +525,7 @@ export function AdminPanel() {
           </form>
         </section>
       )}
+      {edit && <PulseAdmin />}
     </section>
   );
 }

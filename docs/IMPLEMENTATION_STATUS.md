@@ -102,3 +102,15 @@ API 启动和每分钟清理过期信息，避免重叠执行并记录重试错�
 - **测试矩阵更新**：单元 20（API）+ 领域测试 + mobile 46 项文案合约 + **集成 27 + Playwright 10（4 流程 + 6 a11y）全部通过**。
 
 仍未覆盖：Weekend 模块无自动化测试（独立附加功能）；App 无模拟器/真机验证；原生 passkey 与 APNs/FCM 推送需原生模块与平台账号，当前 App 侧未接。
+
+## 第六轮（Pulse 内容管道）
+
+- **通用采集器**：`FeedSource`/`FeedItem`/`PulseMetric`（迁移 `increment_5_pulse`）。复用 SSRF 防护 fetch（DNS 钉住、HTTPS、1MB 上限、不跟跳转）、租约调度与指数退避；env `PULSE_COLLECTOR_ENABLED` + `PULSE_SOURCES_JSON` 启动时 upsert 数据源。
+- **结构化 adapter**：`frankfurter`（AUD/CNY 汇率）、`openmeteo`（天气+7 日预报）、`fuelcheck`（油价）→ 写入 `pulse_metrics`；`rss`/`json` 通用解析 → `feed_items`。
+- **风控自动发布**：`screenText`（从 listing 风控提取的共用函数）扫标题+摘要；`autoPublish` 源过风控直接发布，命中进 pending 队列；指纹 URL 去重。
+- **每日 digest**：悉尼时间 07:30 后自动生成 `daily-YYYY-MM-DD-{zh,en}` 已发布文章（汇率/天气/活动/昨日热帖/新增信息），系统自动建"AUCN 编辑部"作者账号。
+- **API**：`GET /pulse/dashboard`（汇率/天气/油价/预警/近期活动/热帖/新增数）、`GET /pulse/feed`（分类+城市筛选分页）、管理端 sources 开关与 items 审核。
+- **Weekend 多城市**：source/event 加 `cityId` 与 `category`（general/family/social/market/festival），weekendRange 按城市时区计算；浏览 API 支持 `city`/`category` 过滤。
+- **Web**：首页"今日澳洲"仪表盘卡片（汇率/天气/油价/预警/活动）、`/pulse` 信息流页（分类 tab + 分页，署名+外链原文）、导航入口、管理后台"内容采集"分区（源启停 + 待审发布/拒绝）、weekend 页城市/类型筛选与分类徽标。
+- **Mobile**：browse 页今日卡片（汇率/天气/预警/活动），复用 `pulse.*` 文案。
+- **集成测试 +4**：dashboard、审核流（member 403/editor 200）、周末城市分类过滤、digest 幂等生成。
