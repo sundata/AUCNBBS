@@ -4,6 +4,7 @@ import { api, qs, type ArticleSummary, type Page } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { first, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
+import { AutoIntel } from '@/components/auto-intel';
 
 export default async function NewsPage({
   params,
@@ -52,6 +53,7 @@ export default async function NewsPage({
           {tl('loadMore')}
         </Link>
       )}
+      <AutoIntel title={loc === 'zh' ? '本地媒体速览' : 'Local media roundup'} category="news" />
     </div>
   );
 }

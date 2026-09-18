@@ -239,6 +239,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         await this.runSource(source);
       }
       await this.maybeWriteDigest();
+      await this.maybeWriteTopic();
     } catch {
       this.logger.error('Pulse collection failed; retrying next minute');
     } finally {
@@ -280,6 +281,49 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         });
       }
     }
+  }
+
+  /**
+   * One community discussion thread per Sydney day built on the freshest
+   * collected item — gives the boards a daily conversation starter.
+   */
+  async maybeWriteTopic(now = new Date()) {
+    const p = this.sydneyParts(now);
+    if (Number(p.hour) * 60 + Number(p.minute) < 7 * 60) return;
+    const day = `${p.year}-${p.month}-${p.day}`;
+    const key = `last_topic_day`;
+    const cfg = await this.prisma.appConfig.findUnique({ where: { key } });
+    if (cfg?.value === day) return;
+    const [board, item] = await Promise.all([
+      this.prisma.board.findFirst({
+        orderBy: [{ isCityBoard: 'asc' }, { sortOrder: 'asc' }],
+        select: { id: true },
+      }),
+      this.prisma.feedItem.findFirst({
+        where: { status: 'published', category: { in: ['news', 'event', 'deal'] } },
+        orderBy: { publishedAt: 'desc' },
+      }),
+    ]);
+    if (!board || !item) return;
+    const title = item.titleZh ?? item.title;
+    const summary = item.summaryZh ?? item.summary;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.post.create({
+        data: {
+          boardId: board.id,
+          authorId: await this.digestAuthorId(),
+          title: `每日话题｜${title}`.slice(0, 120),
+          body:
+            `${summary ? summary + '\n\n' : ''}原文：${item.sourceName} — ${item.sourceUrl}\n\n` +
+            `大家怎么看？欢迎在评论区聊聊。`,
+        },
+      });
+      await tx.appConfig.upsert({
+        where: { key },
+        create: { key, value: day },
+        update: { value: day },
+      });
+    });
   }
 
   private async digestAuthorId() {

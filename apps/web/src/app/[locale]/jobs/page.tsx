@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { ListingBrowse } from '@/components/listing-browse';
+import { AutoIntel } from '@/components/auto-intel';
 import type { SearchParams } from '@/lib/server';
 
 export default async function Page({
@@ -11,5 +12,13 @@ export default async function Page({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <ListingBrowse type="job" searchParams={searchParams} />;
+  return (
+    <div className="space-y-5">
+      <ListingBrowse type="job" searchParams={searchParams} />
+      <AutoIntel
+        title={locale === 'zh' ? '求职就业动态' : 'Jobs & career intel'}
+        q="job|hiring|career|employment|wage|salary|worker|visa"
+      />
+    </div>
+  );
 }

@@ -3,6 +3,7 @@ import { BUSINESS_CATEGORIES } from '@aucn/domain';
 import { Link, type AppLocale } from '@/i18n/routing';
 import { api, qs, type BusinessSummary, type Page } from '@/lib/api';
 import { cityName } from '@/lib/format';
+import { AutoIntel } from '@/components/auto-intel';
 
 export default async function BusinessesPage({
   params,
@@ -86,6 +87,10 @@ export default async function BusinessesPage({
           {t('more')}
         </Link>
       )}
+      <AutoIntel
+        title={loc === 'zh' ? '商家优惠与本地商机' : 'Local deals & business intel'}
+        category="deal"
+      />
     </div>
   );
 }

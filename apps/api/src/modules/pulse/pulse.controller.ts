@@ -26,6 +26,7 @@ function editor(u: AccessTokenPayload) {
 const feedQuery = z.object({
   category: z.enum(FEED_CATEGORIES).optional(),
   city: z.string().trim().max(60).optional(),
+  q: z.string().trim().max(200).optional(), // 'a|b|c' matches any keyword
   page: z.coerce.number().int().min(1).max(1000).default(1),
 });
 
@@ -109,10 +110,24 @@ export class PulseController {
   @Get('feed')
   async feed(@Query(new ZodPipe(feedQuery)) q: z.infer<typeof feedQuery>) {
     const city = q.city ? await this.prisma.city.findUnique({ where: { slug: q.city } }) : null;
+    const keywords = q.q?.split('|').filter(Boolean) ?? [];
     const where = {
       status: 'published',
       ...(q.category ? { category: q.category } : {}),
-      ...(city ? { OR: [{ cityId: city.id }, { cityId: null }] } : {}),
+      AND: [
+        ...(city ? [{ OR: [{ cityId: city.id }, { cityId: null }] }] : []),
+        ...(keywords.length
+          ? [
+              {
+                OR: keywords.flatMap((k) => [
+                  { title: { contains: k, mode: 'insensitive' as const } },
+                  { summary: { contains: k, mode: 'insensitive' as const } },
+                  { titleZh: { contains: k, mode: 'insensitive' as const } },
+                ]),
+              },
+            ]
+          : []),
+      ],
     };
     const [items, total] = await Promise.all([
       this.prisma.feedItem.findMany({
