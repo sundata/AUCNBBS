@@ -1416,21 +1416,31 @@ describe.sequential('pulse pipeline and weekend multi-city', () => {
     expect(none.items.length).toBe(0);
   });
 
-  it('writes a daily digest article once per Sydney day', async () => {
+  it('writes morning/midday/evening digest articles per Sydney day', async () => {
     const { PulseService } = await import('../src/modules/pulse/pulse.service');
     const svc = new PulseService(prisma as never);
     // 09:00 Sydney == 23:00 UTC previous day (AEST, no DST in Sept).
     const nineAmSydney = new Date(Date.UTC(2026, 8, 17, 23, 0));
     await svc.maybeWriteDigest(nineAmSydney);
     const zh = await prisma.article.findFirst({
-      where: { slug: { startsWith: 'daily-2026-09-18' } },
+      where: { slug: 'daily-2026-09-18-morning-zh' },
     });
     expect(zh).toBeTruthy();
     expect(zh!.status).toBe('published');
-    // Second run is idempotent.
-    await svc.maybeWriteDigest(nineAmSydney);
+    // Later editions don't exist yet at 09:00.
     expect(
       await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
-    ).toBe(2); // zh + en
+    ).toBe(2); // morning zh + en
+    // 19:30 Sydney generates all three editions.
+    const evening = new Date(Date.UTC(2026, 8, 18, 9, 30));
+    await svc.maybeWriteDigest(evening);
+    expect(
+      await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
+    ).toBe(6); // 3 editions × zh/en
+    // Second run is idempotent.
+    await svc.maybeWriteDigest(evening);
+    expect(
+      await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
+    ).toBe(6);
   });
 });

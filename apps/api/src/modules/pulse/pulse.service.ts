@@ -7,7 +7,14 @@ import { screenText } from '../../common/risk';
 import { ADAPTERS } from './pulse.adapters';
 import { feedSourceInput, fingerprint, parseJsonFeed, parseNewsFeed } from './pulse.helpers';
 
-const DIGEST_HOUR_SYDNEY = 7; // generate after 07:30 Australia/Sydney
+/** Digest editions per Australia/Sydney day — morning / midday / evening. */
+const DIGEST_EDITIONS = [
+  { key: 'morning', at: 7 * 60 + 30, zh: '晨报', en: 'Morning Briefing' },
+  { key: 'midday', at: 12 * 60, zh: '午报', en: 'Midday Briefing' },
+  { key: 'evening', at: 18 * 60, zh: '晚报', en: 'Evening Briefing' },
+] as const;
+
+type DigestEdition = (typeof DIGEST_EDITIONS)[number];
 
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
@@ -217,24 +224,26 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return Object.fromEntries(parts.map((v) => [v.type, v.value]));
   }
 
-  /** Daily digest article once per Sydney day after 07:30 — SEO + retention hook. */
+  /** Morning/midday/evening digest articles per Sydney day — SEO + retention hook. */
   async maybeWriteDigest(now = new Date()) {
     const p = this.sydneyParts(now);
-    const hour = Number(p.hour) * 60 + Number(p.minute);
-    if (hour < DIGEST_HOUR_SYDNEY * 60 + 30) return;
+    const minutes = Number(p.hour) * 60 + Number(p.minute);
     const day = `${p.year}-${p.month}-${p.day}`;
-    for (const locale of ['zh', 'en'] as const) {
-      const slug = `daily-${day}-${locale}`;
-      const exists = await this.prisma.article.findUnique({
-        where: { slug },
-        select: { id: true },
-      });
-      if (exists) continue;
-      const article = await this.buildDigest(day, locale);
-      if (!article) return;
-      await this.prisma.article.create({
-        data: { slug, authorId: article.authorId, locale, ...article.data },
-      });
+    for (const edition of DIGEST_EDITIONS) {
+      if (minutes < edition.at) continue;
+      for (const locale of ['zh', 'en'] as const) {
+        const slug = `daily-${day}-${edition.key}-${locale}`;
+        const exists = await this.prisma.article.findUnique({
+          where: { slug },
+          select: { id: true },
+        });
+        if (exists) continue;
+        const article = await this.buildDigest(day, edition, locale);
+        if (!article) return;
+        await this.prisma.article.create({
+          data: { slug, authorId: article.authorId, locale, ...article.data },
+        });
+      }
     }
   }
 
@@ -252,7 +261,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return author.id;
   }
 
-  private async buildDigest(day: string, locale: 'zh' | 'en') {
+  private async buildDigest(day: string, edition: DigestEdition, locale: 'zh' | 'en') {
     const zh = locale === 'zh';
     const now = new Date();
     const dayAgo = new Date(now.getTime() - 86400000);
@@ -321,10 +330,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       authorId,
       data: {
         category: 'daily_digest',
-        title: zh ? `澳中生活圈日报 ${day}` : `AUCN Daily ${day}`,
+        title: zh ? `澳中生活圈${edition.zh} ${day}` : `AUCN ${edition.en} ${day}`,
         summary: zh
-          ? `${day} 汇率、天气、活动与社区热点速览`
-          : `${day} rates, weather, events and community highlights`,
+          ? `${day} ${edition.zh}：汇率、天气、活动与社区热点速览`
+          : `${day} ${edition.en.toLowerCase()}: rates, weather, events and community highlights`,
         body: lines.join('\n\n'),
         status: 'published' as const,
         publishedAt: now,
