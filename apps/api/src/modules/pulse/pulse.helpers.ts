@@ -43,7 +43,25 @@ export function fingerprint(url: string) {
   return createHash('sha256').update(u.href).digest('hex');
 }
 
-const text = (s: unknown) => (typeof s === 'string' ? s.replace(/<[^>]*>/g, '').trim() : '');
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
+
+const decodeEntities = (s: string) =>
+  s.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z]+);/g, (m, e: string) => {
+    if (e.startsWith('#x') || e.startsWith('#X'))
+      return String.fromCodePoint(parseInt(e.slice(2), 16) || 0);
+    if (e.startsWith('#')) return String.fromCodePoint(parseInt(e.slice(1), 10) || 0);
+    return NAMED_ENTITIES[e] ?? m;
+  });
+
+const text = (s: unknown) =>
+  typeof s === 'string' ? decodeEntities(s.replace(/<[^>]*>/g, '')).trim() : '';
 
 /** Generic RSS/Atom → feed items (unlike weekend.events these keep their publication date). */
 export function parseNewsFeed(body: string, limit = 50): z.infer<typeof feedItemInput>[] {
