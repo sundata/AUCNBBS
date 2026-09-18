@@ -167,15 +167,25 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         where: {
           OR: [{ fingerprint: fp }, { title: item.title }, ...(th ? [{ titleHash: th }] : [])],
         },
-        select: { id: true, cityId: true },
+        select: {
+          id: true,
+          cityId: true,
+          title: true,
+          titleZh: true,
+          summary: true,
+          summaryZh: true,
+        },
       });
       if (exists) {
+        const patch: Prisma.FeedItemUpdateInput = {};
         // Same syndicated article via another city's feed — broaden it to national.
-        if (exists.cityId && exists.cityId !== source.cityId)
-          await this.prisma.feedItem.update({
-            where: { id: exists.id },
-            data: { cityId: null },
-          });
+        if (exists.cityId && exists.cityId !== source.cityId) patch.cityId = null;
+        // Self-heal: earlier items imported before translation was enabled.
+        if (!exists.titleZh) patch.titleZh = await translateToZh(exists.title);
+        if (!exists.summaryZh && exists.summary)
+          patch.summaryZh = await translateToZh(exists.summary);
+        if (Object.keys(patch).length)
+          await this.prisma.feedItem.update({ where: { id: exists.id }, data: patch });
         continue;
       }
       const flags = await screenText(this.prisma, `${item.title}\n${item.summary}`);
