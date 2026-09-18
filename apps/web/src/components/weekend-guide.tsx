@@ -232,6 +232,42 @@ export function WeekendGuide() {
           {zh ? '登录后可收藏活动' : 'Sign in to save events'}
         </Link>
       )}
+      {!savedOnly && intel.length > 0 && (
+        <section className="rounded-2xl border border-line bg-white p-5 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-navy">
+              {zh ? '最新活动情报' : 'Latest event intel'}
+            </h2>
+            <Link href="/pulse?category=event" className="text-sm text-brand">
+              {zh ? '查看全部 →' : 'View all →'}
+            </Link>
+          </div>
+          <p className="text-sm text-muted">
+            {zh
+              ? '自动采集自本地活动媒体，点击跳主办方原文。'
+              : 'Auto-collected from local event media — links open the organiser’s page.'}
+          </p>
+          <ul className="divide-y divide-line">
+            {intel.map((item) => (
+              <li key={item.id} className="py-3">
+                <a
+                  href={item.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-navy hover:text-brand"
+                >
+                  {item.title}
+                </a>
+                <p className="text-sm text-muted mt-1">
+                  {item.sourceName}
+                  {' · '}
+                  {date(item.publishedAt)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {error && (
         <p role="alert" className="text-red-700">
           {error}
@@ -250,18 +286,25 @@ export function WeekendGuide() {
                 ? `找到 ${data?.total ?? 0} 个活动`
                 : `${data?.total ?? 0} events found`}
           </p>
-          {rows.length === 0 && (
-            <div className="border border-dashed border-line rounded-2xl p-10 text-center">
-              <h2 className="text-lg font-medium">
-                {zh ? '还没有符合条件的活动' : 'No matching events yet'}
-              </h2>
-              <p className="mt-2 text-muted">
+          {rows.length === 0 &&
+            (intel.length > 0 && !savedOnly ? (
+              <p className="text-sm text-muted">
                 {zh
-                  ? '试试其他日期或区域。我们会在核验后加入新活动。'
-                  : 'Try another date or suburb. New events appear after review.'}
+                  ? '精选活动核验中，先看看上方的活动情报。'
+                  : 'Curated events are under review — check the intel list above.'}
               </p>
-            </div>
-          )}
+            ) : (
+              <div className="border border-dashed border-line rounded-2xl p-10 text-center">
+                <h2 className="text-lg font-medium">
+                  {zh ? '还没有符合条件的活动' : 'No matching events yet'}
+                </h2>
+                <p className="mt-2 text-muted">
+                  {zh
+                    ? '试试其他日期或区域。我们会在核验后加入新活动。'
+                    : 'Try another date or suburb. New events appear after review.'}
+                </p>
+              </div>
+            ))}
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {rows.map((event) => {
               const isSaved = saved.some((e) => e.id === event.id);
@@ -430,42 +473,6 @@ export function WeekendGuide() {
             </div>
           )}
         </>
-      )}
-      {!savedOnly && intel.length > 0 && (
-        <section className="rounded-2xl border border-line bg-white p-5 space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold text-navy">
-              {zh ? '最新活动情报' : 'Latest event intel'}
-            </h2>
-            <Link href="/pulse?category=event" className="text-sm text-brand">
-              {zh ? '查看全部 →' : 'View all →'}
-            </Link>
-          </div>
-          <p className="text-sm text-muted">
-            {zh
-              ? '自动采集自本地活动媒体，点击跳主办方原文。'
-              : 'Auto-collected from local event media — links open the organiser’s page.'}
-          </p>
-          <ul className="divide-y divide-line">
-            {intel.map((item) => (
-              <li key={item.id} className="py-3">
-                <a
-                  href={item.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-navy hover:text-brand"
-                >
-                  {item.title}
-                </a>
-                <p className="text-sm text-muted mt-1">
-                  {item.sourceName}
-                  {' · '}
-                  {date(item.publishedAt)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
       )}
       <p className="text-sm text-muted">
         {zh
