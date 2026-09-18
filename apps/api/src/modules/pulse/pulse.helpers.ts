@@ -33,6 +33,63 @@ export const feedReviewInput = z.object({
   updatedAt: z.string().datetime(),
 });
 
+/** Normalized-title hash: the same syndicated article appears in several city feeds. */
+export function titleHash(title: string) {
+  const norm = title
+    .toLowerCase()
+    .replace(/[^a-z0-9一-鿿]+/g, ' ')
+    .trim();
+  return norm ? createHash('sha256').update(norm).digest('hex') : null;
+}
+
+/**
+ * Best-effort en→zh machine translation for collected items.
+ * DeepL when DEEPL_API_KEY is set, else the public MyMemory endpoint.
+ * Returns null on any failure — the original English text is kept.
+ */
+export async function translateToZh(text: string): Promise<string | null> {
+  if (!text.trim() || /[一-鿿]/.test(text)) return null;
+  const input = text.slice(0, 400);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    if (process.env.DEEPL_API_KEY) {
+      const res = await fetch('https://api-free.deepl.com/v2/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          auth_key: process.env.DEEPL_API_KEY,
+          text: input,
+          source_lang: 'EN',
+          target_lang: 'ZH',
+        }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { translations?: { text?: string }[] };
+      return data.translations?.[0]?.text ?? null;
+    }
+    const url = new URL('https://api.mymemory.translated.net/get');
+    url.searchParams.set('q', input);
+    url.searchParams.set('langpair', 'en|zh-CN');
+    if (process.env.MYMEMORY_EMAIL) url.searchParams.set('de', process.env.MYMEMORY_EMAIL);
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      responseData?: { translatedText?: string };
+      responseStatus?: number;
+    };
+    const out = data.responseData?.translatedText;
+    return data.responseStatus === 200 && out && !/QUERY LENGTH LIMIT|MYMEMORY WARNING/i.test(out)
+      ? out
+      : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** URL normalized so tracking params don't defeat deduplication. */
 export function fingerprint(url: string) {
   const u = new URL(url);

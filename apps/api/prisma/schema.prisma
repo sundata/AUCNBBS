@@ -1111,11 +1111,14 @@ model FeedSource {
 model FeedItem {
   id          String    @id @default(uuid()) @db.Uuid
   fingerprint String    @unique
+  titleHash   String?   @map("title_hash") // normalized-title dedupe: same article in several city feeds
   sourceId    String?   @map("source_id")
   source      FeedSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
-  category    String    // news | deal | guide | notice
+  category    String    // news | deal | event | guide | notice
   title       String
+  titleZh     String?   @map("title_zh") // machine translation, best effort
   summary     String    @default("")
+  summaryZh   String?   @map("summary_zh")
   imageUrl    String?   @map("image_url")
   sourceName  String    @map("source_name")
   sourceUrl   String    @map("source_url")
@@ -1128,6 +1131,7 @@ model FeedItem {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@index([status, category, publishedAt(sort: Desc)])
+  @@index([titleHash])
   @@map("feed_items")
 }
 

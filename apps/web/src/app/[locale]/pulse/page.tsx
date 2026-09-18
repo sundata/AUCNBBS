@@ -67,9 +67,13 @@ export default async function PulsePage({
                   <span>{item.sourceName}</span>
                   {item.publishedAt && <span>{formatDate(item.publishedAt, loc)}</span>}
                 </div>
-                <h3 className="mt-1 font-medium group-hover:text-brand">{item.title}</h3>
-                {item.summary && (
-                  <p className="mt-1 text-sm text-muted line-clamp-2">{item.summary}</p>
+                <h3 className="mt-1 font-medium group-hover:text-brand">
+                  {loc === 'zh' ? (item.titleZh ?? item.title) : item.title}
+                </h3>
+                {(loc === 'zh' ? (item.summaryZh ?? item.summary) : item.summary) && (
+                  <p className="mt-1 text-sm text-muted line-clamp-2">
+                    {loc === 'zh' ? (item.summaryZh ?? item.summary) : item.summary}
+                  </p>
                 )}
               </a>
             </li>

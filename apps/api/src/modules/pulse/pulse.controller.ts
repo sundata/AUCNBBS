@@ -81,6 +81,7 @@ export class PulseController {
           id: true,
           category: true,
           title: true,
+          titleZh: true,
           sourceName: true,
           sourceUrl: true,
           publishedAt: true,
@@ -202,7 +203,8 @@ export class PulseController {
     editor(u);
     const existing = await this.prisma.feedSource.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException();
-    const { id: _omit, ...data } = body;
+    const data = { ...body };
+    delete data.id;
     return this.prisma.feedSource.update({ where: { id }, data });
   }
 }

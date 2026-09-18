@@ -256,7 +256,7 @@ export function WeekendGuide() {
                   rel="noopener noreferrer"
                   className="font-medium text-navy hover:text-brand"
                 >
-                  {item.title}
+                  {zh ? (item.titleZh ?? item.title) : item.title}
                 </a>
                 <p className="text-sm text-muted mt-1">
                   {item.sourceName}

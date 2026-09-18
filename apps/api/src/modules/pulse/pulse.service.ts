@@ -5,7 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { fetchFeed } from '../weekend/feed-fetch';
 import { screenText } from '../../common/risk';
 import { ADAPTERS } from './pulse.adapters';
-import { feedSourceInput, fingerprint, parseJsonFeed, parseNewsFeed } from './pulse.helpers';
+import {
+  feedSourceInput,
+  fingerprint,
+  parseJsonFeed,
+  parseNewsFeed,
+  titleHash,
+  translateToZh,
+} from './pulse.helpers';
 
 /** Digest editions per Australia/Sydney day — morning / midday / evening. */
 const DIGEST_EDITIONS = [
@@ -155,23 +162,41 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     let imported = 0;
     for (const item of items) {
       const fp = fingerprint(item.sourceUrl);
-      const exists = await this.prisma.feedItem.findUnique({
-        where: { fingerprint: fp },
-        select: { id: true },
+      const th = titleHash(item.title);
+      const exists = await this.prisma.feedItem.findFirst({
+        where: {
+          OR: [{ fingerprint: fp }, { title: item.title }, ...(th ? [{ titleHash: th }] : [])],
+        },
+        select: { id: true, cityId: true },
       });
-      if (exists) continue;
+      if (exists) {
+        // Same syndicated article via another city's feed — broaden it to national.
+        if (exists.cityId && exists.cityId !== source.cityId)
+          await this.prisma.feedItem.update({
+            where: { id: exists.id },
+            data: { cityId: null },
+          });
+        continue;
+      }
       const flags = await screenText(this.prisma, `${item.title}\n${item.summary}`);
       // Trusted structured sources publish directly; everything else needs a clean
       // risk scan AND source.autoPublish, otherwise it waits in the review queue.
       const publish = source.autoPublish && flags.length === 0;
+      const [titleZh, summaryZh] = await Promise.all([
+        translateToZh(item.title),
+        item.summary ? translateToZh(item.summary) : Promise.resolve(null),
+      ]);
       await this.prisma.feedItem.create({
         data: {
           fingerprint: fp,
+          titleHash: th,
           sourceId: source.id,
           category: source.category,
           cityId: source.cityId,
           title: item.title,
+          titleZh,
           summary: item.summary,
+          summaryZh,
           imageUrl: item.imageUrl,
           sourceName: source.name,
           sourceUrl: item.sourceUrl,
@@ -321,7 +346,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     if (items.length)
       lines.push(
         zh
-          ? `📰 本地动态：${items.map((i) => i.title).join('；')}`
+          ? `📰 本地动态：${items.map((i) => i.titleZh ?? i.title).join('；')}`
           : `📰 Local: ${items.map((i) => i.title).join('; ')}`,
       );
     if (!lines.length) return null;

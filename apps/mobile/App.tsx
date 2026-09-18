@@ -247,9 +247,10 @@ function Main() {
             } else if (screen === 'me' && row.subjectId) {
               if (row.subjectType === 'event') await openEvent(row.subjectId);
               else if (row.subjectType === 'business') await openBusiness(row.subjectId);
-              else if (row.subjectType === 'article' && row.subjectMeta)
-                (setContent(await request<Row>(`/articles/${row.subjectMeta}`)), go('article'));
-              else await openListing(row.subjectId);
+              else if (row.subjectType === 'article' && row.subjectMeta) {
+                setContent(await request<Row>(`/articles/${row.subjectMeta}`));
+                go('article');
+              } else await openListing(row.subjectId);
             } else if (screen === 'community') {
               const post = await request<Row & { comments: Row[] }>(`/community/posts/${row.id}`);
               setContent(post);

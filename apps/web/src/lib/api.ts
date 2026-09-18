@@ -116,7 +116,9 @@ export interface PulseFeedItem {
   id: string;
   category: string;
   title: string;
+  titleZh: string | null;
   summary: string;
+  summaryZh: string | null;
   sourceName: string;
   sourceUrl: string;
   imageUrl: string | null;
