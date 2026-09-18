@@ -932,7 +932,11 @@
       "deal": "Deals",
       "event": "Events",
       "guide": "Guides",
-      "notice": "Alerts"
+      "notice": "Alerts",
+      "housing": "Housing",
+      "job": "Jobs",
+      "market": "Secondhand",
+      "service": "Services"
     },
     "rate": "AUD rate",
     "weather": "Weather",

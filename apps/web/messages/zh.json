@@ -932,7 +932,11 @@
       "deal": "折扣",
       "event": "活动情报",
       "guide": "指南",
-      "notice": "通知预警"
+      "notice": "通知预警",
+      "housing": "房屋",
+      "job": "求职",
+      "market": "二手",
+      "service": "服务"
     },
     "rate": "澳元汇率",
     "weather": "天气",

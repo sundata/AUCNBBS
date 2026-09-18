@@ -1430,17 +1430,17 @@ describe.sequential('pulse pipeline and weekend multi-city', () => {
     // Later editions don't exist yet at 09:00.
     expect(
       await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
-    ).toBe(2); // morning zh + en
+    ).toBe(1); // morning zh only
     // 19:30 Sydney generates all three editions.
     const evening = new Date(Date.UTC(2026, 8, 18, 9, 30));
     await svc.maybeWriteDigest(evening);
     expect(
       await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
-    ).toBe(6); // 3 editions × zh/en
+    ).toBe(3); // 3 editions × zh
     // Second run is idempotent.
     await svc.maybeWriteDigest(evening);
     expect(
       await prisma.article.count({ where: { slug: { startsWith: 'daily-2026-09-18' } } }),
-    ).toBe(6);
+    ).toBe(3);
   });
 });

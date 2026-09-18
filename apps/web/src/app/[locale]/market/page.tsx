@@ -15,10 +15,7 @@ export default async function Page({
   return (
     <div className="space-y-5">
       <ListingBrowse type="item" searchParams={searchParams} />
-      <AutoIntel
-        title={locale === 'zh' ? '折扣与二手情报' : 'Deals & secondhand intel'}
-        category="deal"
-      />
+      <AutoIntel title={locale === 'zh' ? '华人二手信息' : 'Secondhand intel'} category="market" />
     </div>
   );
 }

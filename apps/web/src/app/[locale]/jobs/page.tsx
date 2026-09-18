@@ -15,10 +15,7 @@ export default async function Page({
   return (
     <div className="space-y-5">
       <ListingBrowse type="job" searchParams={searchParams} />
-      <AutoIntel
-        title={locale === 'zh' ? '求职就业动态' : 'Jobs & career intel'}
-        q="job|hiring|career|employment|wage|salary|worker|visa"
-      />
+      <AutoIntel title={locale === 'zh' ? '华人招工求职' : 'Jobs intel'} category="job" />
     </div>
   );
 }

@@ -267,7 +267,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const day = `${p.year}-${p.month}-${p.day}`;
     for (const edition of DIGEST_EDITIONS) {
       if (minutes < edition.at) continue;
-      for (const locale of ['zh', 'en'] as const) {
+      for (const locale of ['zh'] as const) {
         const slug = `daily-${day}-${edition.key}-${locale}`;
         const exists = await this.prisma.article.findUnique({
           where: { slug },
