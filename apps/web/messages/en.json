@@ -930,6 +930,7 @@
     "cat": {
       "news": "News",
       "deal": "Deals",
+      "event": "Events",
       "guide": "Guides",
       "notice": "Alerts"
     },

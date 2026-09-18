@@ -5,7 +5,7 @@ import { formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
 
-const CATS = ['news', 'deal', 'guide', 'notice'] as const;
+const CATS = ['news', 'deal', 'event', 'guide', 'notice'] as const;
 
 export default async function PulsePage({
   params,

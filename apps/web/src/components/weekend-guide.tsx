@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { api, apiBase, qs, type CityDto } from '@/lib/api';
+import { api, apiBase, qs, type CityDto, type PulseFeedItem } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { Link } from '@/i18n/routing';
 
@@ -46,6 +46,7 @@ export function WeekendGuide() {
   const [savedOnly, setSavedOnly] = useState(false);
   const [saved, setSaved] = useState<WeekendEvent[]>([]);
   const [data, setData] = useState<Result | null>(null);
+  const [intel, setIntel] = useState<PulseFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -94,6 +95,11 @@ export function WeekendGuide() {
       .then(setCities)
       .catch(() => setCities([]));
   }, []);
+  useEffect(() => {
+    void api<{ items: PulseFeedItem[] }>(`/pulse/feed${qs({ category: 'event', city })}`)
+      .then((r) => setIntel(r.items.slice(0, 9)))
+      .catch(() => setIntel([]));
+  }, [city]);
   useEffect(() => {
     void loadSaved().catch(() => setError(zh ? '收藏加载失败' : 'Could not load saved events'));
   }, [loadSaved, zh]);
@@ -424,6 +430,42 @@ export function WeekendGuide() {
             </div>
           )}
         </>
+      )}
+      {!savedOnly && intel.length > 0 && (
+        <section className="rounded-2xl border border-line bg-white p-5 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-navy">
+              {zh ? '最新活动情报' : 'Latest event intel'}
+            </h2>
+            <Link href="/pulse?category=event" className="text-sm text-brand">
+              {zh ? '查看全部 →' : 'View all →'}
+            </Link>
+          </div>
+          <p className="text-sm text-muted">
+            {zh
+              ? '自动采集自本地活动媒体，点击跳主办方原文。'
+              : 'Auto-collected from local event media — links open the organiser’s page.'}
+          </p>
+          <ul className="divide-y divide-line">
+            {intel.map((item) => (
+              <li key={item.id} className="py-3">
+                <a
+                  href={item.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-navy hover:text-brand"
+                >
+                  {item.title}
+                </a>
+                <p className="text-sm text-muted mt-1">
+                  {item.sourceName}
+                  {' · '}
+                  {date(item.publishedAt)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       <p className="text-sm text-muted">
         {zh

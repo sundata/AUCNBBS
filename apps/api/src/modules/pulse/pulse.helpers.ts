@@ -3,7 +3,7 @@ import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { z } from 'zod';
 import { publicUrl } from '../weekend/weekend.helpers';
 
-export const FEED_CATEGORIES = ['news', 'deal', 'guide', 'notice'] as const;
+export const FEED_CATEGORIES = ['news', 'deal', 'event', 'guide', 'notice'] as const;
 export const FEED_FORMATS = ['rss', 'json', 'frankfurter', 'openmeteo', 'fuelcheck'] as const;
 
 export const feedSourceInput = z.object({
