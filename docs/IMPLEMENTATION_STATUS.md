@@ -114,3 +114,13 @@ API 启动和每分钟清理过期信息，避免重叠执行并记录重试错�
 - **Web**：首页"今日澳洲"仪表盘卡片（汇率/天气/油价/预警/活动）、`/pulse` 信息流页（分类 tab + 分页，署名+外链原文）、导航入口、管理后台"内容采集"分区（源启停 + 待审发布/拒绝）、weekend 页城市/类型筛选与分类徽标。
 - **Mobile**：browse 页今日卡片（汇率/天气/预警/活动），复用 `pulse.*` 文案。
 - **集成测试 +4**：dashboard、审核流（member 403/editor 200）、周末城市分类过滤、digest 幂等生成。
+
+## 第七轮（纯中文内容策略）
+
+- **受众决策**：平台面向中文用户，自动采集仅保留中文源；英文文本源（ABC/Guardian/OzBargain/Concrete Playground/SMH/The Age）全部移除。数值型 metric adapter（澳元汇率、天气）保留——无文本内容。
+- **中文源**：新足迹（oursteps.com.au）按版块 RSS 接入——新闻汇总 fid43、澳洲时政 fid124、生活百科 fid1、老爸老妈 fid96、餐馆点评 fid131、聚会交友 fid119、社区动态 fid118、房屋租赁 fid95、房屋买卖 fid141、招工找工 fid42、二手市场 fid108、二手车 fid109、电子二手 fid113、免费广告 fid61。
+- **新增 feed 类目**：`housing`/`job`/`market`/`service`；各分类信息版块页挂对应类目的自动情报块（共享 `AutoIntel` 组件）。
+- **日报中文化**：早/午/晚三刊仅生成中文版（`daily-{date}-{edition}-zh`），不再产出英文版；存量英文 digest 与英文 feed 条目已在生产库清除。
+- **标题去重**：`titleHash` 归一化标题去重，同一文章跨城市 feed 只保留一条（重复出现时 cityId 归并为全国）。
+- **机翻通道保留**：`titleZh`/`summaryZh` 字段与 DeepL/MyMemory 翻译链路仍在（中文源下基本不触发），供将来接入非中文源时复用。
+- **注意**：`oursteps-politics` 正确 fid 是 124（澳洲和世界时政）；fid=119 是聚会交友。配置时曾误用导致时政源采集社交帖，已在生产配置修正并归正条目归属。
