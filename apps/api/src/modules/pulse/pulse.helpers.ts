@@ -119,7 +119,7 @@ const NAMED_ENTITIES: Record<string, string> = {
   nbsp: ' ',
 };
 
-const decodeEntities = (s: string) =>
+export const decodeEntities = (s: string) =>
   s.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z]+);/g, (m, e: string) => {
     if (e.startsWith('#x') || e.startsWith('#X'))
       return String.fromCodePoint(parseInt(e.slice(2), 16) || 0);
@@ -155,8 +155,14 @@ export function parseNewsFeed(body: string, limit = 50): z.infer<typeof feedItem
     const parsed = feedItemInput.safeParse({
       title: text(item.title).slice(0, 200),
       summary: text(item.description ?? item.summary ?? item.content).slice(0, 1200),
-      sourceUrl: typeof link === 'string' ? link : link?.['@_href'],
-      imageUrl: typeof media === 'string' && media.startsWith('https://') ? media : null,
+      sourceUrl:
+        typeof link === 'string'
+          ? decodeEntities(link)
+          : link?.['@_href'] && decodeEntities(link['@_href']),
+      imageUrl:
+        typeof media === 'string' && decodeEntities(media).startsWith('https://')
+          ? decodeEntities(media)
+          : null,
       publishedAt:
         dateRaw && !Number.isNaN(Date.parse(text(dateRaw)))
           ? new Date(text(dateRaw)).toISOString()

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { z } from 'zod';
+import { decodeEntities } from '../pulse/pulse.helpers';
 
 export const publicUrl = z
   .string()
@@ -92,7 +93,10 @@ export function parseFeed(body: string, format: string, sourceName: string) {
     const parsed = eventInput.safeParse({
       title: text(item.title).slice(0, 160),
       sourceName,
-      sourceUrl: typeof link === 'string' ? link : link?.['@_href'],
+      sourceUrl:
+        typeof link === 'string'
+          ? decodeEntities(link)
+          : link?.['@_href'] && decodeEntities(link['@_href']),
     });
     // Feed publication dates are NOT event dates; imported leads remain undated/pending.
     return parsed.success ? [parsed.data] : [];
