@@ -126,3 +126,12 @@ API 启动和每分钟清理过期信息，避免重叠执行并记录重试错�
 - **注意**：`oursteps-politics` 正确 fid 是 124（澳洲和世界时政）；fid=119 是聚会交友。配置时曾误用导致时政源采集社交帖，已在生产配置修正并归正条目归属。
 - **实体解码**：RSS link/media 字段与标题摘要一样需要 `decodeEntities`（`common/entities.ts` 共享模块，避免 pulse↔weekend 循环依赖）；`&amp;` 未解码会导致所有原文链接 404。
 - **信号提取（差异化）**：`common/extract.ts` 在入库时从帖子提取要价（`$650/周`、`时薪$35` 等 → `priceCents`+`pricePeriod`）与澳洲华人区地名（→`location`）。`GET /pulse/insights?category=` 聚合近 7 天中位价、环比与热门区域；AutoIntel 区块顶部显示统计条、条目带价格/位置徽标；日报含租金/薪酬中位数。采集内容是原材料，统计洞察是原创数据资产。
+
+## 第八轮（纯中文界面与域名切换）
+
+- **语言切换移除**：Web header 与移动端的中/英切换按钮删除；`routing.locales` 收敛为 `['zh']`，`messages/en.json` 删除，`switchLocale` 文案移除；`/en/*` 旧链接 301 到 `/zh/*`（middleware）。
+- **SEO 纯中文**：sitemap 仅输出 `/zh` URL；hreflang 仅 `zh-CN`+`x-default`；robots.txt 去掉 `/en` 规则；`<html lang="zh-CN">`、OG `zh_CN`、JSON-LD `inLanguage: zh-CN` 固定；管理后台文章语言选项只留中文。
+- **死分支清理**：`formatDate`/`formatDateTime`/`cityName`/`wmoText` 等去掉 locale 参数固定中文输出；各页面/组件 `zh ? … : …` 双语分支（约 70 处）全部折叠为中文；移动端 `Publish`/`label()` 不再接收 locale。
+- **域名**：`aucn.info`（主站）+ `api.aucn.info`（API）上线，TLS 已签；`www` 301 到 apex；旧 `sundata.tech` 域名 DNS 已下线（nginx 留 301/308 兜底）；`CORS_ORIGINS`/`WEBAUTHN_RP_ID`/`NEXT_PUBLIC_SITE_URL`/`API_PUBLIC_URL` 全部切换。Passkey 因 RP_ID 变更需重新注册；移动端打包需设 `EXPO_PUBLIC_API_URL=https://api.aucn.info`。
+- **站内详情页 + AI 导读**：`/pulse/[id]` 承接所有采集条目点击（AI 导读 `feed_items.brief`、价格/位置徽标、相关情报、原帖次要链接）；DeepSeek 经 Hive V3 OpenAI 兼容端点接入（`AI_BRIEF_*` env），每周日 18:00 生成租房/招工/二手行情周报发至 `/news`。
+- **行情提醒**：各版块统计条内嵌订阅（关键词+上限价+频率），复用 saved_search worker 匹配 `filters.target='feed'` 的新条目并站内通知。
