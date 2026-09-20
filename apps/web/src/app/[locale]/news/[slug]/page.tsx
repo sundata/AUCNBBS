@@ -66,7 +66,7 @@ export default async function ArticlePage({
         <img
           src={a.coverUrl}
           alt={a.title}
-          className="w-full rounded-lg object-cover max-h-96 mb-4"
+          className="w-full rounded-lg object-cover aspect-[2/1] mb-4"
         />
       )}
       <p className="text-muted mb-4">{a.summary}</p>

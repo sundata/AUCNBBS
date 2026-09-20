@@ -16,7 +16,7 @@ export function ArticleBody({ body }: { body: string }) {
                 src={img[2].trim()}
                 alt={img[1]}
                 loading="lazy"
-                className="w-full rounded-lg object-cover max-h-96"
+                className="w-full rounded-lg object-cover aspect-[16/9]"
               />
             </figure>
           );

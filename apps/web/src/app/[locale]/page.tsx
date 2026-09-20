@@ -54,26 +54,36 @@ export default async function HomePage({
               {t('more')}
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {feed.features.map((a, i) => (
+          <div
+            className={`grid grid-cols-2 gap-3 sm:gap-4 ${
+              feed.features.length >= 4
+                ? 'lg:grid-cols-4'
+                : feed.features.length === 3
+                  ? 'lg:grid-cols-3'
+                  : 'lg:grid-cols-2'
+            }`}
+          >
+            {feed.features.map((a) => (
               <Link
                 key={a.id}
                 href={`/news/${a.slug}`}
-                className={`group relative overflow-hidden rounded-2xl aspect-[2/1] ${i === 0 ? 'sm:col-span-2' : ''}`}
+                className="group relative block overflow-hidden rounded-2xl aspect-[4/3]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={a.coverUrl ?? ''}
                   alt={a.title}
-                  loading={i === 0 ? 'eager' : 'lazy'}
+                  loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 p-4">
-                  <h3 className="text-white font-semibold text-lg leading-snug drop-shadow">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                <span className="absolute left-2 top-2 rounded bg-black/55 px-2 py-0.5 text-[11px] text-white">
+                  AI 画报
+                </span>
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <h3 className="text-white font-semibold leading-snug line-clamp-2 text-sm sm:text-base drop-shadow">
                     {a.title}
                   </h3>
-                  <p className="text-white/70 text-sm line-clamp-1 mt-1">{a.summary}</p>
                 </div>
               </Link>
             ))}
