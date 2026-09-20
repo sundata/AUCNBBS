@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { fetchFeed } from '../weekend/feed-fetch';
 import { screenText } from '../../common/risk';
+import { extractLocation, extractPrice } from '../../common/extract';
 import { ADAPTERS } from './pulse.adapters';
 import {
   feedSourceInput,
@@ -188,7 +189,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           await this.prisma.feedItem.update({ where: { id: exists.id }, data: patch });
         continue;
       }
-      const flags = await screenText(this.prisma, `${item.title}\n${item.summary}`);
+      const signal = `${item.title}\n${item.summary}`;
+      const flags = await screenText(this.prisma, signal);
       // Trusted structured sources publish directly; everything else needs a clean
       // risk scan AND source.autoPublish, otherwise it waits in the review queue.
       const publish = source.autoPublish && flags.length === 0;
@@ -196,6 +198,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         translateToZh(item.title),
         item.summary ? translateToZh(item.summary) : Promise.resolve(null),
       ]);
+      const price = extractPrice(signal);
+      const location = extractLocation(signal);
       await this.prisma.feedItem.create({
         data: {
           fingerprint: fp,
@@ -203,6 +207,9 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           sourceId: source.id,
           category: source.category,
           cityId: source.cityId,
+          priceCents: price?.cents ?? null,
+          pricePeriod: price?.period ?? null,
+          location,
           title: item.title,
           titleZh,
           summary: item.summary,
@@ -340,6 +347,44 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return author.id;
   }
 
+  /** Median asking rent / hourly pay extracted from last 14 days of collected posts. */
+  private async weeklySignals() {
+    const now = Date.now();
+    const weekMs = 7 * 86400000;
+    const median = (nums: number[]) => {
+      const s = [...nums].sort((a, b) => a - b);
+      return s.length ? Math.round(s[Math.floor(s.length / 2)] / 100) : null;
+    };
+    const prices = async (category: string, period: string, gt: Date, lte?: Date) =>
+      (
+        await this.prisma.feedItem.findMany({
+          where: {
+            status: 'published',
+            category,
+            pricePeriod: period,
+            priceCents: { not: null },
+            publishedAt: { gt, ...(lte ? { lte } : {}) },
+          },
+          select: { priceCents: true },
+        })
+      ).map((i) => i.priceCents as number);
+    const [rentNow, rentPrev, payNow] = await Promise.all([
+      prices('housing', 'week', new Date(now - weekMs)),
+      prices('housing', 'week', new Date(now - 2 * weekMs), new Date(now - weekMs)),
+      prices('job', 'hour', new Date(now - weekMs)),
+    ]);
+    const rent = median(rentNow);
+    const rentPrevM = median(rentPrev);
+    return {
+      rent,
+      rentCount: rentNow.length,
+      rentDelta:
+        rent != null && rentPrevM ? Math.round(((rent - rentPrevM) / rentPrevM) * 1000) / 10 : null,
+      pay: median(payNow),
+      payCount: payNow.length,
+    };
+  }
+
   private async buildDigest(day: string, edition: DigestEdition, locale: 'zh' | 'en') {
     const zh = locale === 'zh';
     const now = new Date();
@@ -397,6 +442,19 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           : `🔥 Trending: ${posts.map((p2) => p2.title).join('; ')}`,
       );
     if (listings) lines.push(zh ? `🆕 昨日新增信息 ${listings} 条` : `🆕 ${listings} new listings`);
+    const stats = await this.weeklySignals();
+    if (stats.rent != null)
+      lines.push(
+        zh
+          ? `🏠 租金观察：近 7 天租房帖中位要价 $${stats.rent}/周${stats.rentDelta != null ? `，环比 ${stats.rentDelta > 0 ? '+' : ''}${stats.rentDelta}%` : ''}（${stats.rentCount} 条样本）`
+          : `🏠 Median asking rent $${stats.rent}/wk`,
+      );
+    if (stats.pay != null)
+      lines.push(
+        zh
+          ? `💼 薪酬参考：近 7 天招工帖时薪中位数 $${stats.pay}/小时（${stats.payCount} 条样本）`
+          : `💼 Median hourly pay $${stats.pay}/hr`,
+      );
     if (items.length)
       lines.push(
         zh

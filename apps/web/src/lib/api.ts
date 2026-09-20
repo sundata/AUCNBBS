@@ -122,7 +122,21 @@ export interface PulseFeedItem {
   sourceName: string;
   sourceUrl: string;
   imageUrl: string | null;
+  priceCents: number | null;
+  pricePeriod: 'week' | 'hour' | 'day' | 'once' | null;
+  location: string | null;
   publishedAt: string;
+}
+export interface PulseInsights {
+  category: string;
+  period: 'week' | 'hour' | 'day' | 'once';
+  windowDays: number;
+  count: number;
+  prevCount: number;
+  medianPriceCents: number | null;
+  prevMedianPriceCents: number | null;
+  deltaPct: number | null;
+  topLocations: { name: string; count: number }[];
 }
 export interface PulseDashboard {
   city: CityDto | null;

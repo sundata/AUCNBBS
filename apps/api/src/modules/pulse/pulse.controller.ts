@@ -141,6 +141,64 @@ export class PulseController {
     return { items, total, page: q.page };
   }
 
+  /**
+   * Original value-add: aggregate signals extracted from collected posts.
+   * Median asking price this week vs last week, post volume, top locations.
+   */
+  @Get('insights')
+  async insights(
+    @Query(new ZodPipe(z.object({ category: z.enum(FEED_CATEGORIES).optional() })))
+    q: { category?: string },
+  ) {
+    const now = Date.now();
+    const weekMs = 7 * 86400000;
+    const base = { status: 'published', ...(q.category ? { category: q.category } : {}) };
+    const [cur, prev] = await Promise.all([
+      this.prisma.feedItem.findMany({
+        where: { ...base, publishedAt: { gt: new Date(now - weekMs) } },
+        select: { priceCents: true, pricePeriod: true, location: true },
+      }),
+      this.prisma.feedItem.findMany({
+        where: {
+          ...base,
+          publishedAt: { gt: new Date(now - 2 * weekMs), lte: new Date(now - weekMs) },
+        },
+        select: { priceCents: true },
+      }),
+    ]);
+    const median = (nums: number[]) => {
+      const s = [...nums].sort((a, b) => a - b);
+      return s.length ? s[Math.floor(s.length / 2)] : null;
+    };
+    const period = q.category === 'job' ? 'hour' : q.category === 'housing' ? 'week' : 'once';
+    const curPrices = cur
+      .filter((i) => i.priceCents && i.pricePeriod === period)
+      .map((i) => i.priceCents as number);
+    const prevPrices = prev.map((i) => i.priceCents).filter((v): v is number => v != null);
+    const locations = new Map<string, number>();
+    for (const i of cur)
+      if (i.location) locations.set(i.location, (locations.get(i.location) ?? 0) + 1);
+    const medianNow = median(curPrices);
+    const medianPrev = median(prevPrices);
+    return {
+      category: q.category ?? 'all',
+      period,
+      windowDays: 7,
+      count: cur.length,
+      prevCount: prev.length,
+      medianPriceCents: medianNow,
+      prevMedianPriceCents: medianPrev,
+      deltaPct:
+        medianNow != null && medianPrev
+          ? Math.round(((medianNow - medianPrev) / medianPrev) * 1000) / 10
+          : null,
+      topLocations: [...locations.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name, count]) => ({ name, count })),
+    };
+  }
+
   // ---------- Admin: sources + review queue ----------
 
   @Get('admin/sources')

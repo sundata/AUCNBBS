@@ -1123,6 +1123,9 @@ model FeedItem {
   sourceName  String    @map("source_name")
   sourceUrl   String    @map("source_url")
   cityId      String?   @map("city_id") @db.Uuid
+  priceCents  Int?      @map("price_cents") // extracted asking price, AUD cents
+  pricePeriod String?   @map("price_period") // week | hour | day | once
+  location    String?   // extracted suburb/city mention
   status      String    @default("pending") // pending | published | rejected
   riskFlags   String[]  @map("risk_flags")
   publishedAt DateTime? @map("published_at")
