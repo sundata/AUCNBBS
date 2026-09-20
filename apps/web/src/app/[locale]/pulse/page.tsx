@@ -66,15 +66,11 @@ export default async function PulsePage({
         <ul className="divide-y divide-gray-100 rounded-2xl border border-line bg-white">
           {feed.items.map((item) => (
             <li key={item.id} className="p-4">
-              <a
-                href={item.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block"
-              >
+              <Link href={`/pulse/${item.id}`} className="group block">
                 <div className="flex items-center gap-2 text-xs text-muted">
                   <span className="text-brand">{t(`cat.${item.category as 'news'}`)}</span>
                   <span>{item.sourceName}</span>
+                  {item.location && <span>{item.location}</span>}
                   {item.publishedAt && <span>{formatDate(item.publishedAt, loc)}</span>}
                 </div>
                 <h3 className="mt-1 font-medium group-hover:text-brand">
@@ -85,7 +81,7 @@ export default async function PulsePage({
                     {loc === 'zh' ? (item.summaryZh ?? item.summary) : item.summary}
                   </p>
                 )}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

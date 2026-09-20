@@ -89,14 +89,12 @@ export async function AutoIntel({ title, category, q, citySlug, limit = 6 }: Pro
           const price = priceLabel(item, zh);
           return (
             <li key={item.id} className="py-3">
-              <a
-                href={item.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/pulse/${item.id}`}
                 className="font-medium text-navy hover:text-brand"
               >
                 {zh ? (item.titleZh ?? item.title) : item.title}
-              </a>
+              </Link>
               <p className="text-sm text-muted mt-1 flex flex-wrap gap-x-2">
                 {price && <span className="font-medium text-coral-dark">{price}</span>}
                 {item.location && <span>{item.location}</span>}

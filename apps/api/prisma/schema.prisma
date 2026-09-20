@@ -1126,6 +1126,7 @@ model FeedItem {
   priceCents  Int?      @map("price_cents") // extracted asking price, AUD cents
   pricePeriod String?   @map("price_period") // week | hour | day | once
   location    String?   // extracted suburb/city mention
+  brief       String?   // AI editorial note, generated lazily on detail view
   status      String    @default("pending") // pending | published | rejected
   riskFlags   String[]  @map("risk_flags")
   publishedAt DateTime? @map("published_at")

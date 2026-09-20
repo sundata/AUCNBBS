@@ -138,6 +138,10 @@ export interface PulseInsights {
   deltaPct: number | null;
   topLocations: { name: string; count: number }[];
 }
+export interface PulseFeedDetail extends PulseFeedItem {
+  brief: string | null;
+  related: PulseFeedItem[];
+}
 export interface PulseDashboard {
   city: CityDto | null;
   metrics: PulseMetric[];

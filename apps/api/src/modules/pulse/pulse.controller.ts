@@ -17,7 +17,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { AccessTokenPayload } from '../auth/auth.service';
 import { ZodPipe } from '../../common/zod.pipe';
-import { FEED_CATEGORIES, feedReviewInput, feedSourceInput } from './pulse.helpers';
+import { FEED_CATEGORIES, aiBrief, feedReviewInput, feedSourceInput } from './pulse.helpers';
 
 function editor(u: AccessTokenPayload) {
   if (!['editor', 'admin', 'super_admin'].includes(u.role)) throw new ForbiddenException();
@@ -139,6 +139,45 @@ export class PulseController {
       this.prisma.feedItem.count({ where }),
     ]);
     return { items, total, page: q.page };
+  }
+
+  /**
+   * On-site detail page for a collected item. Generates a lazily-cached AI
+   * reading note so visitors get real content here instead of a bare
+   * outbound link; the source stays as attribution.
+   */
+  @Get('feed/:id')
+  async feedItem(@Param('id', ParseUUIDPipe) id: string) {
+    const item = await this.prisma.feedItem.findFirst({
+      where: { id, status: 'published' },
+    });
+    if (!item) throw new NotFoundException();
+    let brief = item.brief;
+    if (!brief) {
+      brief = await aiBrief(
+        `你是澳洲华人生活平台的编辑。把下面这条社区帖子改写成 80-150 字的中文导读：` +
+          `一句话说清是什么事/什么信息，点出价格、地点、时间等关键信息；语气客观简洁，` +
+          `不要夸张、不要编造原文没有的细节、不要复述标题。\n\n标题：${item.title}\n内容：${item.summary || item.title}`,
+      );
+      if (brief)
+        await this.prisma.feedItem.update({ where: { id: item.id }, data: { brief } });
+    }
+    const related = await this.prisma.feedItem.findMany({
+      where: { status: 'published', category: item.category, id: { not: item.id } },
+      orderBy: { publishedAt: 'desc' },
+      take: 4,
+      select: {
+        id: true,
+        title: true,
+        titleZh: true,
+        sourceName: true,
+        publishedAt: true,
+        priceCents: true,
+        pricePeriod: true,
+        location: true,
+      },
+    });
+    return { ...item, brief, related };
   }
 
   /**

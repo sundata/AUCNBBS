@@ -250,14 +250,12 @@ export function WeekendGuide() {
           <ul className="divide-y divide-line">
             {intel.map((item) => (
               <li key={item.id} className="py-3">
-                <a
-                  href={item.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href={`/pulse/${item.id}`}
                   className="font-medium text-navy hover:text-brand"
                 >
                   {zh ? (item.titleZh ?? item.title) : item.title}
-                </a>
+                </Link>
                 <p className="text-sm text-muted mt-1">
                   {item.sourceName}
                   {' · '}
