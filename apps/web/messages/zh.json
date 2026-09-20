@@ -586,7 +586,18 @@
       "rejected": "已拒绝",
       "publish": "发布",
       "reject": "拒绝",
-      "empty": "暂无条目"
+      "empty": "暂无条目",
+      "unhealthy": "有数据源停滞或连续失败，请检查采集器配置",
+      "weekendSources": "周末活动源",
+      "weekendOff": "周末采集器未启用：设置 WEEKEND_COLLECTOR_ENABLED=true 与 WEEKEND_SOURCES_JSON",
+      "health": {
+        "ok": "正常",
+        "late": "延迟",
+        "stalled": "停滞",
+        "failing": "失败",
+        "disabled": "停用",
+        "never": "从未运行"
+      }
     }
   },
   "media": {

@@ -4,20 +4,32 @@ import { useTranslations } from 'next-intl';
 import { api, qs } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth-client';
 
+type Health = 'ok' | 'late' | 'stalled' | 'failing' | 'disabled' | 'never';
 interface Source {
   id: string;
   name: string;
   url: string;
   format: string;
   category: string;
-  autoPublish: boolean;
+  autoPublish?: boolean;
   enabled: boolean;
   intervalMinutes: number;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
   lastSuccessAt: string | null;
   lastError: string | null;
   failures: number;
   lastCount: number;
+  health: Health;
 }
+const HEALTH_STYLE: Record<Health, string> = {
+  ok: 'text-emerald-600',
+  late: 'text-amber-600',
+  stalled: 'text-coral-dark font-semibold',
+  failing: 'text-coral-dark font-semibold',
+  disabled: 'text-muted',
+  never: 'text-amber-600',
+};
 interface Item {
   id: string;
   category: string;
@@ -33,7 +45,9 @@ interface Item {
 export function PulseAdmin() {
   const t = useTranslations('admin.pulse');
   const [sources, setSources] = useState<Source[]>([]);
+  const [weekendSources, setWeekendSources] = useState<Source[]>([]);
   const [collectorOn, setCollectorOn] = useState(false);
+  const [weekendOn, setWeekendOn] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [status, setStatus] = useState<'pending' | 'published' | 'rejected'>('pending');
   const [busy, setBusy] = useState('');
@@ -41,12 +55,15 @@ export function PulseAdmin() {
 
   const load = useCallback(async () => {
     const token = await getAccessToken();
-    const [s, i] = await Promise.all([
+    const [s, w, i] = await Promise.all([
       api<{ enabled: boolean; items: Source[] }>('/pulse/admin/sources', { token }),
+      api<{ enabled: boolean; items: Source[] }>('/weekend/admin/sources', { token }),
       api<{ items: Item[] }>(`/pulse/admin/items${qs({ status })}`, { token }),
     ]);
     setCollectorOn(s.enabled);
     setSources(s.items);
+    setWeekendOn(w.enabled);
+    setWeekendSources(w.items);
     setItems(i.items);
   }, [status]);
 
@@ -97,6 +114,12 @@ export function PulseAdmin() {
       {error && <p className="text-sm text-coral-dark">{error}</p>}
       {!collectorOn && <p className="text-sm text-muted">{t('collectorOff')}</p>}
 
+      {[...sources, ...weekendSources].some((s) => ['stalled', 'failing'].includes(s.health)) && (
+        <p role="alert" className="rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-coral-dark">
+          {t('unhealthy')}
+        </p>
+      )}
+
       <h3 className="font-medium text-sm text-muted">{t('sources')}</h3>
       {sources.length === 0 ? (
         <p className="text-sm text-muted">{t('noSources')}</p>
@@ -110,6 +133,9 @@ export function PulseAdmin() {
                   <span className="text-xs text-muted">
                     {s.format} · {s.category} · {s.intervalMinutes}m
                     {s.autoPublish ? ` · ${t('auto')}` : ''}
+                  </span>{' '}
+                  <span className={`text-xs ${HEALTH_STYLE[s.health]}`}>
+                    ● {t(`health.${s.health}`)}
                   </span>
                 </div>
                 {s.lastError && (
@@ -123,6 +149,29 @@ export function PulseAdmin() {
               >
                 {s.enabled ? t('enabled') : t('disabled')}
               </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3 className="font-medium text-sm text-muted">{t('weekendSources')}</h3>
+      {!weekendOn && <p className="text-sm text-muted">{t('weekendOff')}</p>}
+      {weekendSources.length === 0 ? (
+        <p className="text-sm text-muted">{t('noSources')}</p>
+      ) : (
+        <ul className="divide-y divide-gray-100 text-sm">
+          {weekendSources.map((s) => (
+            <li key={s.id} className="py-2">
+              <div className="font-medium truncate">
+                {s.name}{' '}
+                <span className="text-xs text-muted">
+                  {s.format} · {s.category} · {s.intervalMinutes}m
+                </span>{' '}
+                <span className={`text-xs ${HEALTH_STYLE[s.health]}`}>
+                  ● {t(`health.${s.health}`)}
+                </span>
+              </div>
+              {s.lastError && <div className="text-xs text-coral-dark truncate">{s.lastError}</div>}
             </li>
           ))}
         </ul>

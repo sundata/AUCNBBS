@@ -22,6 +22,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { AccessTokenPayload } from '../auth/auth.service';
 import { ZodPipe } from '../../common/zod.pipe';
+import { sourceHealth } from '../../common/source-health';
 import { eventInput, reviewInput, weekendRange, calendar } from './weekend.helpers';
 
 const browse = z.object({
@@ -127,9 +128,10 @@ export class WeekendController {
   @UseGuards(AuthGuard)
   async sources(@CurrentUser() u: AccessTokenPayload) {
     editor(u);
+    const items = await this.prisma.weekendSource.findMany({ orderBy: { id: 'asc' } });
     return {
       enabled: process.env.WEEKEND_COLLECTOR_ENABLED === 'true',
-      items: await this.prisma.weekendSource.findMany({ orderBy: { id: 'asc' } }),
+      items: items.map((s) => ({ ...s, health: sourceHealth(s) })),
     };
   }
   @Get('admin/events')

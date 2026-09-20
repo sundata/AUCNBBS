@@ -17,6 +17,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { AccessTokenPayload } from '../auth/auth.service';
 import { ZodPipe } from '../../common/zod.pipe';
+import { sourceHealth } from '../../common/source-health';
 import { FEED_CATEGORIES, aiBrief, feedReviewInput, feedSourceInput } from './pulse.helpers';
 import { cityLocations } from '../../common/extract';
 
@@ -257,9 +258,10 @@ export class PulseController {
   @UseGuards(AuthGuard)
   async sources(@CurrentUser() u: AccessTokenPayload) {
     editor(u);
+    const items = await this.prisma.feedSource.findMany({ orderBy: { id: 'asc' } });
     return {
       enabled: process.env.PULSE_COLLECTOR_ENABLED === 'true',
-      items: await this.prisma.feedSource.findMany({ orderBy: { id: 'asc' } }),
+      items: items.map((s) => ({ ...s, health: sourceHealth(s) })),
     };
   }
 
