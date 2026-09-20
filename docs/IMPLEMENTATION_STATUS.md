@@ -124,3 +124,5 @@ API 启动和每分钟清理过期信息，避免重叠执行并记录重试错�
 - **标题去重**：`titleHash` 归一化标题去重，同一文章跨城市 feed 只保留一条（重复出现时 cityId 归并为全国）。
 - **机翻通道保留**：`titleZh`/`summaryZh` 字段与 DeepL/MyMemory 翻译链路仍在（中文源下基本不触发），供将来接入非中文源时复用。
 - **注意**：`oursteps-politics` 正确 fid 是 124（澳洲和世界时政）；fid=119 是聚会交友。配置时曾误用导致时政源采集社交帖，已在生产配置修正并归正条目归属。
+- **实体解码**：RSS link/media 字段与标题摘要一样需要 `decodeEntities`（`common/entities.ts` 共享模块，避免 pulse↔weekend 循环依赖）；`&amp;` 未解码会导致所有原文链接 404。
+- **信号提取（差异化）**：`common/extract.ts` 在入库时从帖子提取要价（`$650/周`、`时薪$35` 等 → `priceCents`+`pricePeriod`）与澳洲华人区地名（→`location`）。`GET /pulse/insights?category=` 聚合近 7 天中位价、环比与热门区域；AutoIntel 区块顶部显示统计条、条目带价格/位置徽标；日报含租金/薪酬中位数。采集内容是原材料，统计洞察是原创数据资产。
