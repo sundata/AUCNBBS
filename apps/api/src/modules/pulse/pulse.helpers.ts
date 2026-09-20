@@ -101,6 +101,40 @@ export async function translateToZh(text: string): Promise<string | null> {
   }
 }
 
+/**
+ * Optional editorial rewrite via an OpenAI-compatible chat endpoint.
+ * Returns null unless AI_BRIEF_API_URL + AI_BRIEF_API_KEY are configured.
+ */
+export async function aiBrief(prompt: string): Promise<string | null> {
+  const url = process.env.AI_BRIEF_API_URL;
+  const key = process.env.AI_BRIEF_API_KEY;
+  if (!url || !key) return null;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    const res = await fetch(url, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: process.env.AI_BRIEF_MODEL ?? 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.4,
+        max_tokens: 800,
+      }),
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const doc = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const text = doc.choices?.[0]?.message?.content?.trim();
+    return text && text.length > 30 ? text.slice(0, 3000) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** URL normalized so tracking params don't defeat deduplication. */
 export function fingerprint(url: string) {
   const u = new URL(url);

@@ -160,37 +160,89 @@ export class NotificationsWorker implements OnModuleInit, OnModuleDestroy {
       const interval = CADENCE_MS[s.cadence] ?? CADENCE_MS.daily;
       const since = s.lastNotifiedAt ?? s.createdAt;
       if (now.getTime() - since.getTime() < interval) continue;
-      const filters = (s.filters ?? {}) as { type?: string; cityId?: string };
-      const matches = await this.prisma.listing.findMany({
-        where: {
-          status: 'active',
-          expiresAt: { gt: now },
-          publishedAt: { gt: since },
-          ...(filters.type ? { type: filters.type as never } : {}),
-          ...(filters.cityId ? { cityId: filters.cityId } : {}),
-          OR: [
-            { title: { contains: s.query, mode: 'insensitive' } },
-            { body: { contains: s.query, mode: 'insensitive' } },
-          ],
-        },
-        select: { id: true, title: true },
-        take: 5,
-      });
+      const filters = (s.filters ?? {}) as {
+        type?: string;
+        cityId?: string;
+        target?: string;
+        category?: string;
+        location?: string;
+        maxPriceCents?: number;
+      };
       // Claim the window first so concurrent workers don't double-notify.
       const claimed = await this.prisma.savedSearch.updateMany({
         where: { id: s.id, lastNotifiedAt: s.lastNotifiedAt },
         data: { lastNotifiedAt: now },
       });
       if (claimed.count !== 1) continue;
+      const matches =
+        filters.target === 'feed'
+          ? await this.feedMatches(s.query, filters, since)
+          : await this.listingMatches(s.query, filters, now, since);
       if (matches.length > 0) {
         await notify(this.prisma, s.userId, 'saved_search.match', s.id, {
           name: s.name,
           count: matches.length,
-          top: matches.map((m) => ({ id: m.id, title: m.title })),
+          top: matches,
         });
         alerted++;
       }
     }
     return alerted;
+  }
+
+  /** Collected-intel alerts: match published feed items by keywords/price/location. */
+  private async feedMatches(
+    query: string,
+    filters: { category?: string; location?: string; maxPriceCents?: number },
+    since: Date,
+  ) {
+    const items = await this.prisma.feedItem.findMany({
+      where: {
+        status: 'published',
+        publishedAt: { gt: since },
+        ...(filters.category ? { category: filters.category } : {}),
+        ...(filters.location
+          ? { location: { contains: filters.location, mode: 'insensitive' as const } }
+          : {}),
+        ...(filters.maxPriceCents ? { priceCents: { lte: filters.maxPriceCents } } : {}),
+        ...(query && query !== '*'
+          ? {
+              OR: [
+                { title: { contains: query, mode: 'insensitive' as const } },
+                { summary: { contains: query, mode: 'insensitive' as const } },
+                { titleZh: { contains: query, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { publishedAt: 'desc' },
+      take: 5,
+      select: { id: true, title: true, titleZh: true, sourceUrl: true },
+    });
+    return items.map((m) => ({ id: m.id, title: m.titleZh ?? m.title, url: m.sourceUrl }));
+  }
+
+  private async listingMatches(
+    query: string,
+    filters: { type?: string; cityId?: string },
+    now: Date,
+    since: Date,
+  ) {
+    const matches = await this.prisma.listing.findMany({
+      where: {
+        status: 'active',
+        expiresAt: { gt: now },
+        publishedAt: { gt: since },
+        ...(filters.type ? { type: filters.type as never } : {}),
+        ...(filters.cityId ? { cityId: filters.cityId } : {}),
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { body: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, title: true },
+      take: 5,
+    });
+    return matches.map((m) => ({ id: m.id, title: m.title }));
   }
 }

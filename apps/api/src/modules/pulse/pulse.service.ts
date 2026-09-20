@@ -13,6 +13,7 @@ import {
   parseNewsFeed,
   titleHash,
   translateToZh,
+  aiBrief,
 } from './pulse.helpers';
 
 /** Digest editions per Australia/Sydney day — morning / midday / evening. */
@@ -23,6 +24,13 @@ const DIGEST_EDITIONS = [
 ] as const;
 
 type DigestEdition = (typeof DIGEST_EDITIONS)[number];
+
+/** Weekly market briefs generated from extracted price signals. */
+const BRIEF_CATEGORIES = [
+  { category: 'housing', period: 'week', zh: '租房', label: '中位周租', unit: '/周' },
+  { category: 'job', period: 'hour', zh: '招工', label: '中位时薪', unit: '/小时' },
+  { category: 'market', period: 'once', zh: '二手', label: '中位要价', unit: '' },
+] as const;
 
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
@@ -247,6 +255,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       }
       await this.maybeWriteDigest();
       await this.maybeWriteTopic();
+      await this.maybeWriteBrief();
     } catch {
       this.logger.error('Pulse collection failed; retrying next minute');
     } finally {
@@ -331,6 +340,133 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         update: { value: day },
       });
     });
+  }
+
+  /**
+   * Sunday-evening weekly brief per price-bearing category. The brief is the
+   * original product: stats aggregated from extracted signals plus notable
+   * posts, optionally rewritten into prose by an LLM when configured.
+   */
+  async maybeWriteBrief(now = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Australia/Sydney',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+    const p = Object.fromEntries(parts.map((v) => [v.type, v.value]));
+    if (p.weekday !== 'Sun' || Number(p.hour) * 60 + Number(p.minute) < 18 * 60) return;
+    // Key the week by its Sydney Monday so the slug is stable and idempotent.
+    const date = new Date(`${p.year}-${p.month}-${p.day}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() - 6);
+    const weekKey = date.toISOString().slice(0, 10);
+    for (const spec of BRIEF_CATEGORIES) {
+      const slug = `brief-${spec.category}-w${weekKey}-zh`;
+      const exists = await this.prisma.article.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      if (exists) continue;
+      const brief = await this.buildBrief(spec, weekKey);
+      if (!brief) continue;
+      await this.prisma.article.create({
+        data: {
+          slug,
+          authorId: await this.digestAuthorId(),
+          locale: 'zh',
+          category: 'weekly_brief',
+          title: brief.title,
+          summary: brief.summary,
+          body: brief.body,
+          status: 'published',
+          publishedAt: now,
+        },
+      });
+    }
+  }
+
+  private async buildBrief(
+    spec: (typeof BRIEF_CATEGORIES)[number],
+    weekKey: string,
+  ): Promise<{ title: string; summary: string; body: string } | null> {
+    const now = Date.now();
+    const weekMs = 7 * 86400000;
+    const items = await this.prisma.feedItem.findMany({
+      where: {
+        status: 'published',
+        category: spec.category,
+        publishedAt: { gt: new Date(now - weekMs) },
+      },
+      orderBy: { publishedAt: 'desc' },
+      select: {
+        title: true,
+        titleZh: true,
+        sourceName: true,
+        sourceUrl: true,
+        priceCents: true,
+        pricePeriod: true,
+        location: true,
+      },
+      take: 200,
+    });
+    if (items.length < 3) return null;
+    const priced = items.filter((i) => i.priceCents && i.pricePeriod === spec.period);
+    const prev = await this.prisma.feedItem.findMany({
+      where: {
+        status: 'published',
+        category: spec.category,
+        pricePeriod: spec.period,
+        priceCents: { not: null },
+        publishedAt: { gt: new Date(now - 2 * weekMs), lte: new Date(now - weekMs) },
+      },
+      select: { priceCents: true },
+    });
+    const median = (nums: number[]) => {
+      const s = [...nums].sort((a, b) => a - b);
+      return s.length ? s[Math.floor(s.length / 2)] : null;
+    };
+    const med = median(priced.map((i) => i.priceCents as number));
+    const prevMed = median(prev.map((i) => i.priceCents as number));
+    const delta =
+      med != null && prevMed ? Math.round(((med - prevMed) / prevMed) * 1000) / 10 : null;
+    const locs = new Map<string, number>();
+    for (const i of items) if (i.location) locs.set(i.location, (locs.get(i.location) ?? 0) + 1);
+    const topLocs = [...locs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const dollars = med != null ? `$${Math.round(med / 100)}` : null;
+    const deltaText = delta != null ? `，环比 ${delta > 0 ? '+' : ''}${delta}%` : '';
+    const locText = topLocs.length
+      ? `热门区域：${topLocs.map(([n, c]) => `${n}（${c} 条）`).join('、')}。`
+      : '';
+    const notable = items
+      .filter((i) => i.priceCents || i.location)
+      .slice(0, 5)
+      .map((i) => {
+        const price = i.priceCents
+          ? `$${Math.round(i.priceCents / 100)}${i.pricePeriod === 'week' ? '/周' : i.pricePeriod === 'hour' ? '/小时' : i.pricePeriod === 'day' ? '/天' : ''}`
+          : '';
+        return `- ${i.titleZh ?? i.title} ${price ? `｜${price}` : ''}｜${i.sourceName} ${i.sourceUrl}`;
+      });
+    const statsText =
+      `本周（${weekKey} 起）${spec.zh}板块共采集到 ${items.length} 条新帖` +
+      (dollars ? `，${spec.label} ${dollars}${spec.unit}${deltaText}` : '') +
+      `。${locText}`;
+    const ai = await aiBrief(
+      `你是澳洲华人生活平台的市场编辑。根据以下本周${spec.zh}板块数据，写一段 120-200 字的中文周报，` +
+        `语气实用、客观，不要夸大，不要编造数据之外的细节。结尾提醒读者交易前自行核实。\n\n` +
+        `${statsText}\n值得关注的帖子：\n${notable.join('\n')}`,
+    );
+    const body = ai
+      ? `${ai}\n\n值得关注的帖子：\n${notable.join('\n')}\n\n数据来源：自动统计自社区公开帖子，仅供参考。`
+      : `${statsText}\n\n值得关注的帖子：\n${notable.join('\n')}\n\n数据来源：自动统计自社区公开帖子，仅供参考，交易前请自行核实。`;
+    return {
+      title: `本周${spec.zh}行情｜${dollars ? `${spec.label} ${dollars}${spec.unit}` : `${items.length} 条新帖`}`,
+      summary: statsText.slice(0, 120),
+      body,
+    };
   }
 
   private async digestAuthorId() {

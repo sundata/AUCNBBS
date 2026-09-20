@@ -2,6 +2,7 @@ import { getLocale } from 'next-intl/server';
 import { Link, type AppLocale } from '@/i18n/routing';
 import { api, qs, type PulseFeedItem, type PulseInsights } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { IntelAlert } from '@/components/intel-alert';
 
 interface Props {
   title: string;
@@ -75,6 +76,7 @@ export async function AutoIntel({ title, category, q, citySlug, limit = 6 }: Pro
               {l.name} {l.count}
             </span>
           ))}
+          {statLabel && <IntelAlert category={category as string} label={title} />}
         </div>
       )}
       <p className="text-sm text-muted">

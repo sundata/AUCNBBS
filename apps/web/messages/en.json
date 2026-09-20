@@ -242,7 +242,9 @@
       "career": "Careers",
       "life": "Life",
       "policy": "Policy",
-      "education": "Education"
+      "education": "Education",
+      "weekly_brief": "Market Brief",
+      "daily_digest": "Daily Briefing"
     },
     "source": "Source",
     "editorNote": "Community-curated content. Not professional advice."
