@@ -1,8 +1,10 @@
-import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Query, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { z } from 'zod';
 import { cursorQuerySchema, decodeCursor, Page, toPage } from '../../common/pagination';
 import { ZodPipe } from '../../common/zod.pipe';
+import { articleCoverSvg } from '../../common/cover-svg';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ArticleSummaryDto {
@@ -63,6 +65,18 @@ export class ContentController {
       })),
       query.limit,
     );
+  }
+
+  @Get(':slug/cover.svg')
+  async cover(@Param('slug') slug: string, @Res() res: Response) {
+    const a = await this.prisma.article.findFirst({
+      where: { slug, status: 'published' },
+      select: { title: true },
+    });
+    if (!a) throw new NotFoundException('Article not found');
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+    res.send(articleCoverSvg(a.title, slug));
   }
 
   @Get(':slug')

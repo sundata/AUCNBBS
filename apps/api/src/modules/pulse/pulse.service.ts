@@ -14,6 +14,7 @@ import {
   titleHash,
   translateToZh,
   aiBrief,
+  pexelsPhotos,
 } from './pulse.helpers';
 
 /** Digest editions per Australia/Sydney day — morning / midday / evening. */
@@ -30,6 +31,20 @@ const BRIEF_CATEGORIES = [
   { category: 'housing', period: 'week', zh: '租房', label: '中位周租', unit: '/周' },
   { category: 'job', period: 'hour', zh: '招工', label: '中位时薪', unit: '/小时' },
   { category: 'market', period: 'once', zh: '二手', label: '中位要价', unit: '' },
+] as const;
+
+/** Daily illustrated feature topics — rotated by day-of-year so every day differs. */
+const FEATURE_TOPICS = [
+  { topic: '澳元汇率、换汇时机与一周生活成本', hint: 'Australian money currency' },
+  { topic: '周末亲子活动与免费遛娃好去处', hint: 'Sydney family park weekend' },
+  { topic: '华人区租房市场行情与看房避坑', hint: 'apartment building rent' },
+  { topic: '澳洲通勤、驾照换算与出行贴士', hint: 'Australia train station commute' },
+  { topic: '华人超市采购与地道家乡味', hint: 'Asian grocery market food' },
+  { topic: '求职招工行情与面试实用技巧', hint: 'office job interview' },
+  { topic: '二手捡漏与闲置交易攻略', hint: 'weekend garage sale market' },
+  { topic: '中澳文化差异与本地社交礼仪', hint: 'Australia lifestyle friends cafe' },
+  { topic: '当季天气穿衣指南与户外出行', hint: 'Australia beach coastline' },
+  { topic: '留学生与新移民落地生活指南', hint: 'Sydney city street students' },
 ] as const;
 
 @Injectable()
@@ -261,6 +276,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       await this.maybeWriteDigest();
       await this.maybeWriteTopic();
       await this.maybeWriteBrief();
+      await this.maybeWriteFeature();
     } catch {
       this.logger.error('Pulse collection failed; retrying next minute');
     } finally {
@@ -471,6 +487,122 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       title: `本周${spec.zh}行情｜${dollars ? `${spec.label} ${dollars}${spec.unit}` : `${items.length} 条新帖`}`,
       summary: statsText.slice(0, 120),
       body,
+    };
+  }
+
+  /**
+   * Daily illustrated feature — the LLM synthesises today's collected signals
+   * into an original magazine piece. Cover is a real photo via Pexels when a
+   * key is configured, otherwise a generated branded SVG. One per Sydney day.
+   */
+  async maybeWriteFeature(now = new Date()) {
+    const p = this.sydneyParts(now);
+    if (Number(p.hour) * 60 + Number(p.minute) < 9 * 60 + 30) return;
+    const day = `${p.year}-${p.month}-${p.day}`;
+    const slug = `feature-${day}-zh`;
+    const exists = await this.prisma.article.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (exists) return;
+    const feature = await this.buildFeature(day, slug);
+    if (!feature) return;
+    await this.prisma.article.create({
+      data: {
+        slug,
+        authorId: await this.digestAuthorId(),
+        locale: 'zh',
+        category: 'ai_feature',
+        status: 'published',
+        publishedAt: now,
+        ...feature,
+      },
+    });
+  }
+
+  private async buildFeature(
+    day: string,
+    slug: string,
+  ): Promise<{ title: string; summary: string; body: string; coverUrl: string; source: string } | null> {
+    const dayIdx =
+      Math.floor(
+        (Date.parse(`${day}T00:00:00Z`) - Date.parse(`${day.slice(0, 4)}-01-01T00:00:00Z`)) /
+          86400000,
+      ) % FEATURE_TOPICS.length;
+    const spec = FEATURE_TOPICS[dayIdx];
+    const [rate, weather, items, signals, cities] = await Promise.all([
+      this.prisma.pulseMetric.findFirst({
+        where: { kind: 'exchange_rate' },
+        orderBy: { observedAt: 'desc' },
+      }),
+      this.prisma.pulseMetric.findMany({
+        where: { kind: 'weather' },
+        orderBy: { observedAt: 'desc' },
+        distinct: ['cityId'],
+        take: 4,
+      }),
+      this.prisma.feedItem.findMany({
+        where: { status: 'published', publishedAt: { gt: new Date(Date.now() - 3 * 86400000) } },
+        orderBy: { publishedAt: 'desc' },
+        select: { title: true, titleZh: true, category: true, priceCents: true, pricePeriod: true, location: true },
+        take: 12,
+      }),
+      this.weeklySignals(),
+      this.prisma.city.findMany({ select: { id: true, nameZh: true } }),
+    ]);
+    const cityName = new Map(cities.map((c) => [c.id, c.nameZh]));
+    const r = (rate?.payload as { rates?: Record<string, number> } | undefined)?.rates ?? {};
+    const context: string[] = [];
+    if (r.CNY) context.push(`今日汇率：1 AUD = ${r.CNY} CNY`);
+    for (const w of weather) {
+      const p2 = w.payload as { temp?: number; code?: number };
+      const name = w.cityId ? cityName.get(w.cityId) : null;
+      if (name && p2.temp != null) context.push(`${name}天气：${p2.temp}°C`);
+    }
+    if (signals.rent) context.push(`本周采集租房帖中位周租 $${signals.rent}（${signals.rentCount} 条样本）`);
+    if (signals.pay) context.push(`本周招工帖中位时薪 $${signals.pay}（${signals.payCount} 条样本）`);
+    for (const i of items.slice(0, 8)) {
+      const price = i.priceCents ? `（$${Math.round(i.priceCents / 100)}${i.pricePeriod === 'week' ? '/周' : i.pricePeriod === 'hour' ? '/小时' : ''}）` : '';
+      context.push(`采集帖：${i.titleZh ?? i.title}${price}${i.location ? ` @${i.location}` : ''}`);
+    }
+    const raw = await aiBrief(
+      `你是澳洲华人生活平台「澳中生活圈」的编辑。根据下面今天采集到的素材，围绕主题「${spec.topic}」写一篇生动的中文图文专栏。\n\n` +
+        `严格输出 JSON（不要输出其他内容）：{"title": "...", "summary": "...", "body": "...", "imageQuery": "..."}\n` +
+        `- title ≤ 22字，吸引人但不标题党\n` +
+        `- summary ≤ 50字\n` +
+        `- body 400-600字：开头一段引言，然后用 "## 小标题" 分 2-3 节，语气轻松实用，像跟读者聊天\n` +
+        `- 可以引用素材里的数据（汇率、价格、地点），但不要编造素材之外的数字或事实\n` +
+        `- imageQuery 为 2-4 个英文单词，用来搜索一张贴题的澳洲生活照片（例："Sydney harbour sunset"）\n\n` +
+        `今日素材：\n${context.join('\n')}`,
+      1800,
+    );
+    if (!raw) return null;
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    let doc: { title?: string; summary?: string; body?: string; imageQuery?: string };
+    try {
+      doc = JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+    if (!doc.title || !doc.body || doc.body.length < 200) return null;
+    const photos = await pexelsPhotos(doc.imageQuery ?? spec.hint);
+    const cover = photos[0];
+    const inline = photos[1];
+    let body = doc.body.slice(0, 4000);
+    if (inline) body = body.replace(/\n+(?=## )/, `\n\n![配图](${inline.url})\n`);
+    const credits = [cover, inline]
+      .filter((p): p is { url: string; credit: string } => !!p?.credit)
+      .map((p) => p.credit);
+    if (credits.length) body += `\n\n图片：${[...new Set(credits)].join('、')} / Pexels`;
+    return {
+      title: doc.title.slice(0, 60),
+      summary: (doc.summary ?? doc.title).slice(0, 160),
+      body,
+      coverUrl:
+        cover?.url ??
+        `${process.env.API_PUBLIC_URL ?? 'http://localhost:4000'}/api/v1/articles/${slug}/cover.svg`,
+      source: 'AUCN AI 画报',
     };
   }
 

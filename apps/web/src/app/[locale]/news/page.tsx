@@ -26,19 +26,31 @@ export default async function NewsPage({
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
       <h1 className="text-xl font-bold mb-4">{t('title')}</h1>
+      <Link href="/daily" className="block mb-5 rounded-xl border p-4 text-brand">墨尔本每日图文 · Melbourne daily stories →</Link>
       {page.items.length === 0 ? (
         <Empty text={th('empty')} />
       ) : (
         <ul className="divide-y divide-gray-100">
           {page.items.map((a) => (
             <li key={a.id} className="py-3">
-              <Link href={`/news/${a.slug}`} className="group block">
-                <div className="text-xs text-muted flex gap-2">
-                  <span className="text-brand">{t(`category.${a.category as 'platform'}`)}</span>
-                  <span>{formatDate(a.publishedAt)}</span>
+              <Link href={`/news/${a.slug}`} className="group flex gap-3">
+                {a.coverUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={a.coverUrl}
+                    alt=""
+                    loading="lazy"
+                    className="w-28 h-20 rounded-lg object-cover shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <div className="text-xs text-muted flex gap-2">
+                    <span className="text-brand">{t(`category.${a.category as 'platform'}`)}</span>
+                    <span>{formatDate(a.publishedAt)}</span>
+                  </div>
+                  <h2 className="font-semibold group-hover:text-brand">{a.title}</h2>
+                  <p className="text-sm text-muted line-clamp-2">{a.summary}</p>
                 </div>
-                <h2 className="font-semibold group-hover:text-brand">{a.title}</h2>
-                <p className="text-sm text-muted line-clamp-2">{a.summary}</p>
               </Link>
             </li>
           ))}

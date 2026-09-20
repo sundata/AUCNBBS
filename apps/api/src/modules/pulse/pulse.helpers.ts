@@ -105,13 +105,13 @@ export async function translateToZh(text: string): Promise<string | null> {
  * Optional editorial rewrite via an OpenAI-compatible chat endpoint.
  * Returns null unless AI_BRIEF_API_URL + AI_BRIEF_API_KEY are configured.
  */
-export async function aiBrief(prompt: string): Promise<string | null> {
+export async function aiBrief(prompt: string, maxTokens = 800): Promise<string | null> {
   const url = process.env.AI_BRIEF_API_URL;
   const key = process.env.AI_BRIEF_API_KEY;
   if (!url || !key) return null;
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 20000);
+    const timer = setTimeout(() => ctrl.abort(), 30000);
     const res = await fetch(url, {
       method: 'POST',
       signal: ctrl.signal,
@@ -120,7 +120,7 @@ export async function aiBrief(prompt: string): Promise<string | null> {
         model: process.env.AI_BRIEF_MODEL ?? 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
-        max_tokens: 800,
+        max_tokens: maxTokens,
       }),
     });
     clearTimeout(timer);
@@ -129,9 +129,39 @@ export async function aiBrief(prompt: string): Promise<string | null> {
       choices?: { message?: { content?: string } }[];
     };
     const text = doc.choices?.[0]?.message?.content?.trim();
-    return text && text.length > 30 ? text.slice(0, 3000) : null;
+    return text && text.length > 30 ? text.slice(0, 6000) : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Topical stock photos via the Pexels API for AI feature covers/inline images.
+ * Empty unless PEXELS_API_KEY is configured. Pexels' licence requires
+ * photographer attribution — callers must keep the credit.
+ */
+export async function pexelsPhotos(
+  query: string,
+): Promise<{ url: string; credit: string }[]> {
+  const key = process.env.PEXELS_API_KEY;
+  if (!key) return [];
+  try {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
+      { headers: { Authorization: key }, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return [];
+    const doc = (await res.json()) as {
+      photos?: { src?: { large?: string; original?: string }; photographer?: string }[];
+    };
+    return (doc.photos ?? [])
+      .map((p) => ({
+        url: p.src?.large ?? p.src?.original ?? '',
+        credit: p.photographer ?? '',
+      }))
+      .filter((p) => p.url);
+  } catch {
+    return [];
   }
 }
 

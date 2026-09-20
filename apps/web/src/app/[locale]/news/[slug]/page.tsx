@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/format';
 import { localeAlternates } from '@/lib/site';
 import { ReportButton } from '@/components/report-button';
 import { FavoriteButton } from '@/components/favorite-button';
+import { ArticleBody } from '@/components/article-body';
 
 async function loadArticle(slug: string): Promise<ArticleDetail | null> {
   try {
@@ -60,8 +61,16 @@ export default async function ArticlePage({
         <span>{a.author.displayName}</span>
       </div>
       <h1 className="text-2xl font-bold mt-2 mb-4">{a.title}</h1>
+      {a.coverUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={a.coverUrl}
+          alt={a.title}
+          className="w-full rounded-lg object-cover max-h-96 mb-4"
+        />
+      )}
       <p className="text-muted mb-4">{a.summary}</p>
-      <div className="prose prose-sm max-w-none whitespace-pre-wrap leading-7">{a.body}</div>
+      <ArticleBody body={a.body} />
       {a.source && (
         <p className="text-xs text-muted mt-6">
           {t('source')}: {a.source}
