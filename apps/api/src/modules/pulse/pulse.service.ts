@@ -199,6 +199,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       }
       const signal = `${item.title}\n${item.summary}`;
       const flags = await screenText(this.prisma, signal);
+      // Free-ad boards are nearly all promo posts; flag-priced ads are rejected
+      // outright so the review queue is not buried under them.
+      const autoReject =
+        source.category === 'service' && flags.includes('too_good_price');
       // Trusted structured sources publish directly; everything else needs a clean
       // risk scan AND source.autoPublish, otherwise it waits in the review queue.
       const publish = source.autoPublish && flags.length === 0;
@@ -226,7 +230,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           sourceName: source.name,
           sourceUrl: item.sourceUrl,
           riskFlags: flags,
-          status: publish ? 'published' : 'pending',
+          status: autoReject ? 'rejected' : publish ? 'published' : 'pending',
+          reviewedAt: autoReject ? new Date() : null,
           publishedAt: item.publishedAt ? new Date(item.publishedAt) : new Date(),
         },
       });
