@@ -1,6 +1,5 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { useLocale } from 'next-intl';
 import { api, apiBase, qs, type CityDto, type PulseFeedItem } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { Link } from '@/i18n/routing';
@@ -32,7 +31,6 @@ interface Result {
 }
 const CATS = ['general', 'family', 'social', 'market', 'festival'] as const;
 export function WeekendGuide() {
-  const zh = useLocale() === 'zh';
   const { me } = useAuth();
   const [period, setPeriod] = useState('weekend');
   const [free, setFree] = useState(false);
@@ -89,7 +87,7 @@ export function WeekendGuide() {
     return () => {
       active = false;
     };
-  }, [period, free, family, indoor, suburb, city, category, page, zh]);
+  }, [period, free, family, indoor, suburb, city, category, page]);
   useEffect(() => {
     void api<CityDto[]>('/cities')
       .then(setCities)
@@ -102,9 +100,12 @@ export function WeekendGuide() {
   }, [city]);
   useEffect(() => {
     void loadSaved().catch(() => setError('收藏加载失败'));
-  }, [loadSaved, zh]);
+  }, [loadSaved]);
   const reset = () => setPage(1);
   const rows = savedOnly ? saved : (data?.items ?? []);
+  const shownIntel = suburb
+    ? intel.filter((i) => (i.location ?? '').toLowerCase() === suburb.toLowerCase())
+    : intel;
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
@@ -230,38 +231,6 @@ export function WeekendGuide() {
           {'登录后可收藏活动'}
         </Link>
       )}
-      {!savedOnly && intel.length > 0 && (
-        <section className="rounded-2xl border border-line bg-white p-5 space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold text-navy">
-              {'最新活动情报'}
-            </h2>
-            <Link href="/pulse?category=event" className="text-sm text-brand">
-              {'查看全部 →'}
-            </Link>
-          </div>
-          <p className="text-sm text-muted">
-            {'自动采集自本地活动媒体，点击跳主办方原文。'}
-          </p>
-          <ul className="divide-y divide-line">
-            {intel.map((item) => (
-              <li key={item.id} className="py-3">
-                <Link
-                  href={`/pulse/${item.id}`}
-                  className="font-medium text-navy hover:text-brand"
-                >
-                  {item.titleZh ?? item.title}
-                </Link>
-                <p className="text-sm text-muted mt-1">
-                  {item.sourceName}
-                  {' · '}
-                  {date(item.publishedAt)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {error && (
         <p role="alert" className="text-red-700">
           {error}
@@ -279,9 +248,7 @@ export function WeekendGuide() {
           {rows.length === 0 &&
             (intel.length > 0 && !savedOnly ? (
               <p className="text-sm text-muted">
-                {zh
-                  ? '精选活动核验中，先看看上方的活动情报。'
-                  : 'Curated events are under review — check the intel list above.'}
+                {'精选活动核验中，先看看下方的活动情报。'}
               </p>
             ) : (
               <div className="border border-dashed border-line rounded-2xl p-10 text-center">
@@ -289,9 +256,7 @@ export function WeekendGuide() {
                   {'还没有符合条件的活动'}
                 </h2>
                 <p className="mt-2 text-muted">
-                  {zh
-                    ? '试试其他日期或区域。我们会在核验后加入新活动。'
-                    : 'Try another date or suburb. New events appear after review.'}
+                  {'试试其他日期或区域。我们会在核验后加入新活动。'}
                 </p>
               </div>
             ))}
@@ -309,13 +274,9 @@ export function WeekendGuide() {
                     <span className="font-medium text-brand">{event.suburb || 'Sydney'}</span>
                     <span>
                       {event.priceMinor === 0
-                        ? zh
-                          ? '免费'
-                          : 'Free'
+                        ? '免费'
                         : event.priceMinor === null
-                          ? zh
-                            ? '费用待确认'
-                            : 'Price unconfirmed'
+                          ? '费用待确认'
                           : `A$${(event.priceMinor / 100).toFixed(2)}`}
                     </span>
                   </div>
@@ -334,16 +295,16 @@ export function WeekendGuide() {
                   <div className="flex flex-wrap gap-2 mt-3 text-sm">
                     {event.category && event.category !== 'general' && (
                       <span className="bg-purple-50 text-purple-900 rounded px-2 py-1">
-                        {zh
-                          ? (
-                              {
-                                family: '亲子',
-                                social: '社交',
-                                market: '集市',
-                                festival: '节庆',
-                              } as Record<string, string>
-                            )[event.category]
-                          : event.category}
+                        {
+                          (
+                            {
+                              family: '亲子',
+                              social: '社交',
+                              market: '集市',
+                              festival: '节庆',
+                            } as Record<string, string>
+                          )[event.category]
+                        }
                       </span>
                     )}
                     {event.family && (
@@ -360,27 +321,15 @@ export function WeekendGuide() {
                   <p className="text-sm mt-3">
                     {unavailable
                       ? ended
-                        ? zh
-                          ? '活动已结束'
-                          : 'Event ended'
-                        : zh
-                          ? '活动已取消或下架'
-                          : 'Cancelled or withdrawn'
+                        ? '活动已结束'
+                        : '活动已取消或下架'
                       : event.booking === 'sold_out'
-                        ? zh
-                          ? '已满额'
-                          : 'Sold out'
+                        ? '已满额'
                         : event.booking === 'required'
-                          ? zh
-                            ? '需要预约，余位请查主办方'
-                            : 'Booking required; check availability'
+                          ? '需要预约，余位请查主办方'
                           : event.booking === 'not_required'
-                            ? zh
-                              ? '无需预约，出发前请确认'
-                              : 'No booking required; check before travelling'
-                            : zh
-                              ? '预约及余位请查主办方'
-                              : 'Check booking and availability with organiser'}
+                            ? '无需预约，出发前请确认'
+                            : '预约及余位请查主办方'}
                   </p>
                   <div className="flex flex-wrap gap-3 mt-4">
                     <a
@@ -464,10 +413,44 @@ export function WeekendGuide() {
           )}
         </>
       )}
+      {!savedOnly && shownIntel.length > 0 && (
+        <section className="rounded-2xl border border-line bg-white p-5 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-navy">
+              {'最新活动情报'}
+            </h2>
+            <Link
+              href={`/pulse${qs({ category: 'event', city })}`}
+              className="text-sm text-brand"
+            >
+              {'查看全部 →'}
+            </Link>
+          </div>
+          <p className="text-sm text-muted">
+            {'自动采集自本地活动媒体，点击跳主办方原文。'}
+          </p>
+          <ul className="divide-y divide-line">
+            {shownIntel.map((item) => (
+              <li key={item.id} className="py-3">
+                <Link
+                  href={`/pulse/${item.id}`}
+                  className="font-medium text-navy hover:text-brand"
+                >
+                  {item.titleZh ?? item.title}
+                </Link>
+                <p className="text-sm text-muted mt-1">
+                  {item.sourceName}
+                  {item.location ? ` · ${item.location}` : ''}
+                  {' · '}
+                  {date(item.publishedAt)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <p className="text-sm text-muted">
-        {zh
-          ? '日历文件包含提前一天提醒；请在日历应用中确认已导入并开启通知。活动变动不会自动同步至已下载的日历。'
-          : 'Calendar files include a one-day reminder. Import them and enable notifications in your calendar app. Later event changes are not synced to downloaded calendars.'}
+        {'日历文件包含提前一天提醒；请在日历应用中确认已导入并开启通知。活动变动不会自动同步至已下载的日历。'}
       </p>
     </section>
   );
