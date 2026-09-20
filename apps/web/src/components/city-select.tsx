@@ -1,14 +1,12 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { AppLocale } from '@/i18n/routing';
 import type { CityDto } from '@/lib/api';
 import { cityName } from '@/lib/format';
 
 export function CitySelect({ cities }: { cities: CityDto[] }) {
   const t = useTranslations('nav');
-  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -30,7 +28,7 @@ export function CitySelect({ cities }: { cities: CityDto[] }) {
       <option value="">{t('allCities')}</option>
       {cities.map((c) => (
         <option key={c.id} value={c.slug}>
-          {cityName(c, locale)}
+          {cityName(c)}
         </option>
       ))}
     </select>

@@ -1,5 +1,5 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs, type BoardDto, type Page, type PostSummary } from '@/lib/api';
 import { cityName, formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
@@ -25,8 +25,7 @@ export default async function CommunityPage({
   ]);
   const t = await getTranslations('community');
   const tl = await getTranslations('listing');
-  const loc = (await getLocale()) as AppLocale;
-  const boardName = (b: BoardDto) => (loc === 'zh' ? b.nameZh : b.nameEn);
+  const boardName = (b: BoardDto) => (b.nameZh);
 
   return (
     <div className="grid gap-4 lg:grid-cols-4">
@@ -70,7 +69,7 @@ export default async function CommunityPage({
           <p className="text-xs text-muted mb-3">
             {(() => {
               const b = boards.find((x) => x.slug === board);
-              return b ? (loc === 'zh' ? b.descriptionZh : b.descriptionEn) : '';
+              return b ? (b.descriptionZh) : '';
             })()}
           </p>
         )}
@@ -97,8 +96,8 @@ export default async function CommunityPage({
                     {[
                       boardName(boards.find((b) => b.slug === p.boardSlug) ?? boards[0]),
                       p.author.anonymous ? t('anonymousName') : p.author.displayName,
-                      cityName(p.city, loc),
-                      formatDate(p.lastActiveAt, loc),
+                      cityName(p.city),
+                      formatDate(p.lastActiveAt),
                     ]
                       .filter(Boolean)
                       .join(' · ')}

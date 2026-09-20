@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Link, type AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { api, ApiError, apiBase } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { FollowButton } from '@/components/follow-button';
@@ -58,7 +58,6 @@ export default async function UserProfilePage({
   const u = await load(id);
   if (!u) notFound();
   const t = await getTranslations('profile');
-  const loc = (await getLocale()) as AppLocale;
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <header className="bg-white rounded-lg border border-gray-200 p-6 flex gap-4 items-start">
@@ -77,7 +76,7 @@ export default async function UserProfilePage({
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{u.displayName}</h1>
           <p className="text-sm text-muted">
-            {t('memberSince', { date: formatDate(u.memberSince, loc) })} ·{' '}
+            {t('memberSince', { date: formatDate(u.memberSince) })} ·{' '}
             {t('postCount', { count: u.postCount })}
           </p>
           {u.bio && <p className="mt-2 whitespace-pre-wrap">{u.bio}</p>}

@@ -1,5 +1,5 @@
-import { getLocale, getTranslations } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs } from '@/lib/api';
 import type { PulseDashboard as Dash } from '@/lib/api';
 import { cityName } from '@/lib/format';
@@ -20,13 +20,12 @@ const WMO: Record<number, [string, string]> = {
   95: ['雷暴', 'Thunderstorm'],
 };
 
-function wmoText(code: number | undefined, loc: AppLocale) {
-  const v = code == null ? undefined : (WMO[code] ?? ['—', '—']);
-  return v ? (loc === 'zh' ? v[0] : v[1]) : '—';
+function wmoText(code: number | undefined) {
+  return code == null ? '—' : (WMO[code]?.[0] ?? '—');
 }
 
 export async function PulseDashboard({ citySlug }: { citySlug?: string }) {
-  const [t, loc] = await Promise.all([getTranslations('pulse'), getLocale() as Promise<AppLocale>]);
+  const t = await getTranslations('pulse');
   const d = await api<Dash>(`/pulse/dashboard${qs({ city: citySlug })}`).catch(() => null);
   if (!d) return null;
   const rate = d.metrics.find((m) => m.kind === 'exchange_rate');
@@ -61,11 +60,11 @@ export async function PulseDashboard({ citySlug }: { citySlug?: string }) {
           return (
             <div key={i} className="rounded-xl bg-surface px-4 py-3">
               <div className="text-xs text-muted">
-                {d.city ? cityName(d.city, loc) : t('weather')}
+                {d.city ? cityName(d.city) : t('weather')}
               </div>
               <div className="mt-1 text-xl font-semibold text-navy">
                 {p.current?.temp ?? '—'}°C{' '}
-                <span className="text-sm font-normal">{wmoText(p.current?.code, loc)}</span>
+                <span className="text-sm font-normal">{wmoText(p.current?.code)}</span>
               </div>
               {p.daily?.[0] && (
                 <div className="text-xs text-muted">

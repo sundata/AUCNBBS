@@ -12,7 +12,7 @@ let cityId = '',
   listingId = '';
 async function login(page: Page, email: string, mfaSecret?: string) {
   await challenge(prisma, email);
-  await page.goto('/en/login');
+  await page.goto('/zh/login');
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await expect(page.getByLabel('Code', { exact: true })).toBeVisible();
@@ -25,8 +25,8 @@ async function login(page: Page, email: string, mfaSecret?: string) {
     await page.getByLabel('Authenticator code', { exact: true }).fill(totpCode(mfaSecret));
     await page.getByRole('button', { name: 'Verify & sign in', exact: true }).click();
   }
-  await expect(page).toHaveURL(/\/en$/);
-  await page.goto('/en/me');
+  await expect(page).toHaveURL(/\/zh$/);
+  await page.goto('/zh/me');
   await expect(page.getByRole('heading', { name: 'Me', exact: true })).toBeVisible();
 }
 test.beforeAll(async () => {
@@ -105,7 +105,7 @@ test('owner edits and pauses a listing without falling into a public 404', async
   await page.getByRole('button', { name: 'Remove photo', exact: true }).click();
   await expect(page.getByRole('img', { name: 'Listing photo 1' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/me$/);
+  await expect(page).toHaveURL(/\/zh\/me$/);
   await expect(page.getByRole('link', { name: 'Browser edited desk' })).toBeVisible();
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Resume', exact: true })).toBeVisible();
@@ -114,9 +114,9 @@ test('owner edits and pauses a listing without falling into a public 404', async
 });
 test('buyer contacts owner and sends a message', async ({ page }) => {
   await login(page, buyer.email);
-  await page.goto(`/en/market/${listingId}`);
+  await page.goto(`/zh/market/${listingId}`);
   await page.getByRole('button', { name: 'Contact owner', exact: true }).click();
-  await expect(page).toHaveURL(/\/en\/messages\?conversation=/);
+  await expect(page).toHaveURL(/\/zh\/messages\?conversation=/);
   await page.getByLabel('Message', { exact: true }).fill('Hello from the browser');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByLabel('Message', { exact: true })).toHaveValue('');
@@ -127,10 +127,10 @@ test('buyer contacts owner and sends a message', async ({ page }) => {
 });
 test('CMS creates an article and ordinary users cannot enter admin', async ({ page }) => {
   await login(page, owner.email);
-  await page.goto('/en/admin');
+  await page.goto('/zh/admin');
   await expect(page.getByText('Your account does not have access')).toBeVisible();
   await login(page, editor.email, STAFF_TOTP);
-  await page.goto('/en/admin');
+  await page.goto('/zh/admin');
   await page.getByLabel('URL slug (lowercase letters and hyphens)').fill(`browser-${randomUUID()}`);
   await page.getByLabel('Summary', { exact: true }).fill('A browser authored article summary.');
   await page.getByLabel('Body', { exact: true }).fill('A browser authored article body.');

@@ -1,8 +1,8 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { Link, type AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { api, ApiError, type ListingSummary, type Page, qs } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { OwnerActions } from './owner-actions';
@@ -14,7 +14,6 @@ export function MePanel() {
   const ta = useTranslations('auth');
   const tl = useTranslations('listing');
   const tc = useTranslations('common');
-  const locale = useLocale() as AppLocale;
   const { me, loading } = useAuth();
   const [name, setName] = useState('');
   const [saved, setSaved] = useState(false);
@@ -122,7 +121,7 @@ export function MePanel() {
                     <span className="flex-1 line-clamp-1">{l.title}</span>
                   )}
                   <span className="text-xs text-muted">
-                    {tl(`type.${l.type}`)} · {formatDate(l.expiresAt, locale)}
+                    {tl(`type.${l.type}`)} · {formatDate(l.expiresAt)}
                   </span>
                 </div>
                 {!['removed', 'archived', 'completed', 'pending_review'].includes(l.status) && (

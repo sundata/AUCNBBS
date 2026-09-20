@@ -15,7 +15,7 @@ export default async function Page({
   return (
     <div className="space-y-5">
       <ListingBrowse type="job" searchParams={searchParams} />
-      <AutoIntel title={locale === 'zh' ? '华人招工求职' : 'Jobs intel'} category="job" />
+      <AutoIntel title="华人招工求职" category="job" />
     </div>
   );
 }

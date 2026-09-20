@@ -1,8 +1,7 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { api, ApiError, type BusinessDetail, type BusinessReviewDto, type Page } from '@/lib/api';
 import { cityName } from '@/lib/format';
-import type { AppLocale } from '@/i18n/routing';
 import { ClaimForm } from '@/components/business-panels';
 import { FavoriteButton } from '@/components/favorite-button';
 import { ReportButton } from '@/components/report-button';
@@ -29,8 +28,7 @@ export default async function BusinessPage({
     () => ({ items: [], nextCursor: null }) as Page<BusinessReviewDto>,
   );
   const t = await getTranslations('businesses');
-  const loc = (await getLocale()) as AppLocale;
-  const description = loc === 'zh' ? b.descriptionZh : (b.descriptionEn ?? b.descriptionZh);
+  const description = b.descriptionZh;
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
@@ -60,10 +58,10 @@ export default async function BusinessPage({
             <dt className="w-28 text-muted">{t('location')}</dt>
             <dd>
               {b.suburb}
-              {b.city ? `, ${cityName(b.city, loc)}` : ''}
+              {b.city ? `, ${cityName(b.city)}` : ''}
               {b.address ? ` · ${b.address}` : ''}{' '}
               <MapLink
-                query={`${b.address ?? ''} ${b.suburb}${b.city ? `, ${cityName(b.city, loc)}` : ''}, Australia`.trim()}
+                query={`${b.address ?? ''} ${b.suburb}${b.city ? `, ${cityName(b.city)}` : ''}, Australia`.trim()}
               />
             </dd>
           </div>

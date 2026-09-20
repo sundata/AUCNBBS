@@ -16,9 +16,8 @@ import {
 } from '@aucn/domain';
 import { request } from './api';
 import zh from '../../web/messages/zh.json';
-import en from '../../web/messages/en.json';
-export function label(locale: 'zh' | 'en', key: string): string {
-  let current: unknown = locale === 'zh' ? zh : en;
+export function label(key: string): string {
+  let current: unknown = zh;
   for (const segment of key.split('.'))
     current =
       typeof current === 'object' && current !== null
@@ -140,17 +139,15 @@ export interface EditableListing {
   details: Record<string, unknown>;
 }
 export function Publish({
-  locale,
   cities,
   onDone,
   initial,
 }: {
-  locale: 'zh' | 'en';
   cities: { id: string; nameZh: string; nameEn: string }[];
   onDone: () => void;
   initial?: EditableListing;
 }) {
-  const t = (key: string) => label(locale, key);
+  const t = label;
   const [type, setType] = useState<ListingType>(initial?.type ?? 'item');
   const [intent, setIntent] = useState(initial?.intent ?? 'offer');
   const [title, setTitle] = useState(initial?.title ?? '');
@@ -193,7 +190,7 @@ export function Publish({
         onChange={setCity}
         render={(id) => {
           const c = cities.find((c) => c.id === id);
-          return locale === 'zh' ? (c?.nameZh ?? '') : (c?.nameEn ?? '');
+          return c?.nameZh ?? '';
         }}
       />
       {[

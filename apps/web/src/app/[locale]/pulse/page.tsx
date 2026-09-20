@@ -1,5 +1,5 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs, type PulseFeedItem } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
@@ -28,7 +28,6 @@ export default async function PulsePage({
   setRequestLocale(locale);
   const sp = await searchParams;
   const t = await getTranslations('pulse');
-  const loc = (await getLocale()) as AppLocale;
   const city = await resolveCity(first(sp.city));
   const category = CATS.find((c) => c === first(sp.category));
   const page = Math.max(1, Number(first(sp.page) ?? 1) || 1);
@@ -71,14 +70,14 @@ export default async function PulsePage({
                   <span className="text-brand">{t(`cat.${item.category as 'news'}`)}</span>
                   <span>{item.sourceName}</span>
                   {item.location && <span>{item.location}</span>}
-                  {item.publishedAt && <span>{formatDate(item.publishedAt, loc)}</span>}
+                  {item.publishedAt && <span>{formatDate(item.publishedAt)}</span>}
                 </div>
                 <h3 className="mt-1 font-medium group-hover:text-brand">
-                  {loc === 'zh' ? (item.titleZh ?? item.title) : item.title}
+                  {item.titleZh ?? item.title}
                 </h3>
-                {(loc === 'zh' ? (item.summaryZh ?? item.summary) : item.summary) && (
+                {(item.summaryZh ?? item.summary) && (
                   <p className="mt-1 text-sm text-muted line-clamp-2">
-                    {loc === 'zh' ? (item.summaryZh ?? item.summary) : item.summary}
+                    {item.summaryZh ?? item.summary}
                   </p>
                 )}
               </Link>

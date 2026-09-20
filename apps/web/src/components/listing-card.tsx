@@ -1,5 +1,5 @@
-import { useLocale, useTranslations } from 'next-intl';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import type { ListingSummary } from '@/lib/api';
 import { cityName, formatDate, formatMoney, LISTING_ROUTES } from '@/lib/format';
 
@@ -59,7 +59,6 @@ export function ListingCard({ l, compact = false }: { l: ListingSummary; compact
   const th = useTranslations('housing');
   const tj = useTranslations('job');
   const ti = useTranslations('item');
-  const locale = useLocale() as AppLocale;
   const h = l.highlights;
 
   const tags: string[] = [];
@@ -97,14 +96,14 @@ export function ListingCard({ l, compact = false }: { l: ListingSummary; compact
       </div>
       <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted">
         <span className="truncate">
-          {[cityName(l.city, locale), l.suburb, ...tags.filter(Boolean)]
+          {[cityName(l.city), l.suburb, ...tags.filter(Boolean)]
             .filter(Boolean)
             .join(' · ')}
         </span>
         <ListingPrice l={l} />
       </div>
       {!compact && (
-        <div className="mt-1 text-[11px] text-gray-500">{formatDate(l.publishedAt, locale)}</div>
+        <div className="mt-1 text-[11px] text-gray-500">{formatDate(l.publishedAt)}</div>
       )}
     </Link>
   );

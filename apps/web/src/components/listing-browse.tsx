@@ -1,6 +1,6 @@
 import type { ListingIntent, ListingType } from '@aucn/domain';
-import { getLocale, getTranslations } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs, type ListingSummary, type Page } from '@/lib/api';
 import { cityName, LISTING_ROUTES } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
@@ -40,7 +40,6 @@ export async function ListingBrowse({
     })}`,
   );
   const t = await getTranslations('listing');
-  const loc = (await getLocale()) as AppLocale;
   const route = `/${LISTING_ROUTES[type]}`;
   const filterParams = {
     city: city?.slug,
@@ -58,7 +57,7 @@ export async function ListingBrowse({
         <h1 className="text-xl font-bold">
           {t(`type.${type}`)}
           {city && (
-            <span className="text-muted font-normal text-base"> · {cityName(city, loc)}</span>
+            <span className="text-muted font-normal text-base"> · {cityName(city)}</span>
           )}
         </h1>
         <div className="flex gap-1 text-sm">

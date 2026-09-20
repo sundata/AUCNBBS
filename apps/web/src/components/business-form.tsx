@@ -1,8 +1,8 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { useRouter, type AppLocale } from '@/i18n/routing';
+import { useRouter } from '@/i18n/routing';
 import { BUSINESS_CATEGORIES, businessSchema } from '@aucn/domain';
 import { api, ApiError, type CityDto } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
@@ -14,7 +14,6 @@ export function BusinessForm() {
   const t = useTranslations('businesses');
   const tc = useTranslations('common');
   const ta = useTranslations('auth');
-  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const { me, loading } = useAuth();
   const [cities, setCities] = useState<CityDto[]>([]);
@@ -147,7 +146,7 @@ export function BusinessForm() {
             <option value="">—</option>
             {cities.map((c) => (
               <option key={c.id} value={c.id}>
-                {cityName(c, locale)}
+                {cityName(c)}
               </option>
             ))}
           </select>

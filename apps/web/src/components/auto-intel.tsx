@@ -1,5 +1,4 @@
-import { getLocale } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { api, qs, type PulseFeedItem, type PulseInsights } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { IntelAlert } from '@/components/intel-alert';
@@ -12,30 +11,28 @@ interface Props {
   limit?: number;
 }
 
-const PERIOD_LABEL: Record<string, { zh: string; en: string }> = {
-  week: { zh: '/周', en: '/wk' },
-  hour: { zh: '/小时', en: '/hr' },
-  day: { zh: '/天', en: '/day' },
-  once: { zh: '', en: '' },
+const PERIOD_LABEL: Record<string, string> = {
+  week: '/周',
+  hour: '/小时',
+  day: '/天',
+  once: '',
 };
 
-const CATEGORY_STAT: Record<string, { zh: string; en: string }> = {
-  housing: { zh: '中位周租', en: 'median rent' },
-  job: { zh: '中位时薪', en: 'median pay' },
-  market: { zh: '中位要价', en: 'median price' },
-  service: { zh: '中位报价', en: 'median quote' },
+const CATEGORY_STAT: Record<string, string> = {
+  housing: '中位周租',
+  job: '中位时薪',
+  market: '中位要价',
+  service: '中位报价',
 };
 
-function priceLabel(item: PulseFeedItem, zh: boolean) {
+function priceLabel(item: PulseFeedItem) {
   if (item.priceCents == null || !item.pricePeriod) return null;
   const p = PERIOD_LABEL[item.pricePeriod] ?? PERIOD_LABEL.once;
-  return `$${Math.round(item.priceCents / 100)}${zh ? p.zh : p.en}`;
+  return `$${Math.round(item.priceCents / 100)}${p}`;
 }
 
 /** Auto-collected intel block: stats strip + latest items; hides until data exists. */
 export async function AutoIntel({ title, category, q, citySlug, limit = 6 }: Props) {
-  const loc = (await getLocale()) as AppLocale;
-  const zh = loc === 'zh';
   const [feed, insights] = await Promise.all([
     api<{ items: PulseFeedItem[] }>(`/pulse/feed${qs({ category, q, city: citySlug })}`).catch(
       () => null,
@@ -52,18 +49,18 @@ export async function AutoIntel({ title, category, q, citySlug, limit = 6 }: Pro
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-semibold text-navy">{title}</h2>
         <Link href={`/pulse${qs({ category, q, city: citySlug })}`} className="text-sm text-brand">
-          {zh ? '查看全部 →' : 'View all →'}
+          {'查看全部 →'}
         </Link>
       </div>
       {insights && insights.count > 0 && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm rounded-xl bg-surface px-4 py-2.5">
           <span className="text-navy font-medium">
-            {zh ? `近 7 天 ${insights.count} 条` : `${insights.count} posts this week`}
+            {`近 7 天 ${insights.count} 条`}
           </span>
           {statLabel && insights.medianPriceCents != null && (
             <span className="text-navy font-medium">
-              {zh ? statLabel.zh : statLabel.en} ${Math.round(insights.medianPriceCents / 100)}
-              {zh ? PERIOD_LABEL[insights.period].zh : PERIOD_LABEL[insights.period].en}
+              {statLabel} ${Math.round(insights.medianPriceCents / 100)}
+              {PERIOD_LABEL[insights.period]}
               {insights.deltaPct != null && (
                 <span
                   className={insights.deltaPct > 0 ? 'text-coral-dark' : 'text-brand'}
@@ -80,20 +77,18 @@ export async function AutoIntel({ title, category, q, citySlug, limit = 6 }: Pro
         </div>
       )}
       <p className="text-sm text-muted">
-        {zh
-          ? '自动采集自中文社区并提取行情数据，每日更新，点击跳原文。'
-          : 'Auto-collected from Chinese community sources with extracted price signals — links open the source.'}
+        {'自动采集自中文社区并提取行情数据，每日更新，点击跳原文。'}
       </p>
       <ul className="divide-y divide-line">
         {items.map((item) => {
-          const price = priceLabel(item, zh);
+          const price = priceLabel(item);
           return (
             <li key={item.id} className="py-3">
               <Link
                 href={`/pulse/${item.id}`}
                 className="font-medium text-navy hover:text-brand"
               >
-                {zh ? (item.titleZh ?? item.title) : item.title}
+                {item.titleZh ?? item.title}
               </Link>
               <p className="text-sm text-muted mt-1 flex flex-wrap gap-x-2">
                 {price && <span className="font-medium text-coral-dark">{price}</span>}
@@ -101,7 +96,7 @@ export async function AutoIntel({ title, category, q, citySlug, limit = 6 }: Pro
                 <span>
                   {item.sourceName}
                   {' · '}
-                  {formatDate(item.publishedAt, loc)}
+                  {formatDate(item.publishedAt)}
                 </span>
               </p>
             </li>

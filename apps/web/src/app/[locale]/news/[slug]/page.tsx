@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import type { AppLocale } from '@/i18n/routing';
 import { api, ApiError, type ArticleDetail } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { localeAlternates } from '@/lib/site';
@@ -43,7 +42,6 @@ export default async function ArticlePage({
   const a = await loadArticle(slug);
   if (!a) notFound();
   const t = await getTranslations('news');
-  const loc = (await getLocale()) as AppLocale;
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -51,14 +49,14 @@ export default async function ArticlePage({
     description: a.summary,
     datePublished: a.publishedAt,
     author: { '@type': 'Person', name: a.author.displayName },
-    inLanguage: loc === 'zh' ? 'zh-CN' : 'en-AU',
+    inLanguage: 'zh-CN',
   };
   return (
     <article className="bg-white rounded-lg border border-gray-200 p-6 max-w-3xl mx-auto">
       <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       <div className="text-xs text-muted flex gap-2">
         <span className="text-brand">{t(`category.${a.category as 'platform'}`)}</span>
-        <span>{formatDate(a.publishedAt, loc)}</span>
+        <span>{formatDate(a.publishedAt)}</span>
         <span>{a.author.displayName}</span>
       </div>
       <h1 className="text-2xl font-bold mt-2 mb-4">{a.title}</h1>

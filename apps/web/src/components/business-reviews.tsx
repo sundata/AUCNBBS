@@ -1,10 +1,9 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { useState } from 'react';
 import type { BusinessReviewDto } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import type { AppLocale } from '@/i18n/routing';
 import { ReportButton } from './report-button';
 import { ReviewForm, ReviewReplyForm } from './business-panels';
 
@@ -18,7 +17,6 @@ export function ReviewsList({
   viewerIsOwner: boolean;
 }) {
   const t = useTranslations('businesses');
-  const locale = useLocale() as AppLocale;
   const [reviews, setReviews] = useState(initial);
   return (
     <div className="space-y-4">
@@ -27,7 +25,7 @@ export function ReviewsList({
         {reviews.map((r) => (
           <li key={r.id} className="text-sm border-b border-gray-100 pb-3">
             <div className="text-xs text-muted">
-              {'★'.repeat(r.rating)} · {r.author.displayName} · {formatDate(r.createdAt, locale)}
+              {'★'.repeat(r.rating)} · {r.author.displayName} · {formatDate(r.createdAt)}
             </div>
             <p className="whitespace-pre-wrap mt-1">{r.body}</p>
             {r.reply && (

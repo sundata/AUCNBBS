@@ -1,6 +1,6 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { BUSINESS_CATEGORIES } from '@aucn/domain';
-import { Link, type AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { api, qs, type BusinessSummary, type Page } from '@/lib/api';
 import { cityName } from '@/lib/format';
 import { AutoIntel } from '@/components/auto-intel';
@@ -16,7 +16,6 @@ export default async function BusinessesPage({
   setRequestLocale(locale);
   const sp = await searchParams;
   const t = await getTranslations('businesses');
-  const loc = (await getLocale()) as AppLocale;
   const page = await api<Page<BusinessSummary>>(
     `/businesses${qs({ cityId: sp.city, category: sp.category, q: sp.q, cursor: sp.cursor })}`,
   ).catch(() => ({ items: [], nextCursor: null }) as Page<BusinessSummary>);
@@ -71,7 +70,7 @@ export default async function BusinessesPage({
                 {b.nameEn && <p className="text-sm text-muted line-clamp-1">{b.nameEn}</p>}
                 <p className="text-xs text-muted mt-1">
                   {t(`category.${b.category as 'other'}`)} · {b.suburb}
-                  {b.city ? ` · ${cityName(b.city, loc)}` : ''}
+                  {b.city ? ` · ${cityName(b.city)}` : ''}
                 </p>
                 <p className="text-xs text-muted mt-1">{t('reviews', { count: b.reviewCount })}</p>
               </Link>
@@ -88,7 +87,7 @@ export default async function BusinessesPage({
         </Link>
       )}
       <AutoIntel
-        title={loc === 'zh' ? '商家优惠与本地商机' : 'Local deals & business intel'}
+        title="商家优惠与本地商机"
         category="deal"
       />
     </div>

@@ -500,7 +500,6 @@ export function AdminPanel() {
                 onChange={(e) => setForm((f) => ({ ...f, locale: e.target.value }))}
               >
                 <option value="zh">中文</option>
-                <option value="en">English</option>
               </select>
             </label>
             <label>

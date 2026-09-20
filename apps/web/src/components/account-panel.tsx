@@ -1,16 +1,14 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiBase, ApiError, type SessionDto } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { formatDate, formatDateTime } from '@/lib/format';
-import type { AppLocale } from '@/i18n/routing';
 
 export function AccountPanel() {
   const t = useTranslations('account');
   const tc = useTranslations('common');
-  const locale = useLocale() as AppLocale;
   const { me } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [sessions, setSessions] = useState<SessionDto[]>([]);
@@ -163,8 +161,8 @@ export function AccountPanel() {
               <div className="flex-1 min-w-0">
                 <div className="truncate">{s.userAgent ?? t('unknownDevice')}</div>
                 <div className="text-xs text-muted">
-                  {formatDateTime(s.createdAt, locale)} ·{' '}
-                  {s.current ? t('currentSession') : formatDate(s.expiresAt, locale)}
+                  {formatDateTime(s.createdAt)} ·{' '}
+                  {s.current ? t('currentSession') : formatDate(s.expiresAt)}
                 </div>
               </div>
               {!s.current && (
@@ -194,7 +192,7 @@ export function AccountPanel() {
         {me.deletionRequestedAt ? (
           <div className="text-sm">
             <p className="text-amber-700">
-              {t('deletionPending', { date: formatDate(me.deletionRequestedAt, locale) })}
+              {t('deletionPending', { date: formatDate(me.deletionRequestedAt) })}
             </p>
             <button
               type="button"

@@ -1,14 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useLocale } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 
 /** Subscribe to collected-intel alerts: keyword + max price → saved_search match. */
 export function IntelAlert({ category, label }: { category: string; label: string }) {
-  const loc = useLocale();
-  const zh = loc === 'zh';
   const { me } = useAuth();
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
@@ -19,7 +16,7 @@ export function IntelAlert({ category, label }: { category: string; label: strin
   const [error, setError] = useState<string | null>(null);
   if (!me) return null;
   if (done)
-    return <span className="text-xs text-brand">{zh ? '已订阅 ✓' : 'Subscribed ✓'}</span>;
+    return <span className="text-xs text-brand">{'已订阅 ✓'}</span>;
 
   return (
     <span className="inline-flex items-center gap-2">
@@ -29,7 +26,7 @@ export function IntelAlert({ category, label }: { category: string; label: strin
           onClick={() => setOpen(true)}
           className="text-sm text-brand underline"
         >
-          {zh ? '订阅行情提醒' : 'Price alerts'}
+          {'订阅行情提醒'}
         </button>
       ) : (
         <form
@@ -60,7 +57,7 @@ export function IntelAlert({ category, label }: { category: string; label: strin
               setDone(true);
             })()
               .catch((err) =>
-                setError(err instanceof ApiError ? err.message : zh ? '保存失败' : 'Failed'),
+                setError(err instanceof ApiError ? err.message : '保存失败'),
               )
               .finally(() => setBusy(false));
           }}
@@ -69,7 +66,7 @@ export function IntelAlert({ category, label }: { category: string; label: strin
             maxLength={60}
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder={zh ? '关键词（如 Eastwood 两房）' : 'Keywords'}
+            placeholder={'关键词（如 Eastwood 两房）'}
             className="border rounded px-2 py-1 text-sm w-44"
           />
           <input
@@ -77,7 +74,7 @@ export function IntelAlert({ category, label }: { category: string; label: strin
             maxLength={7}
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value.replace(/[^\d.]/g, ''))}
-            placeholder={zh ? '上限价 $' : 'Max $'}
+            placeholder={'上限价 $'}
             className="border rounded px-2 py-1 text-sm w-24"
           />
           <select
@@ -85,12 +82,12 @@ export function IntelAlert({ category, label }: { category: string; label: strin
             onChange={(e) => setCadence(e.target.value)}
             className="border rounded px-2 py-1 text-sm"
           >
-            <option value="instant">{zh ? '即时' : 'Instant'}</option>
-            <option value="daily">{zh ? '每天' : 'Daily'}</option>
-            <option value="weekly">{zh ? '每周' : 'Weekly'}</option>
+            <option value="instant">{'即时'}</option>
+            <option value="daily">{'每天'}</option>
+            <option value="weekly">{'每周'}</option>
           </select>
           <button disabled={busy} className="text-sm text-brand underline">
-            {zh ? '订阅' : 'Subscribe'}
+            {'订阅'}
           </button>
         </form>
       )}

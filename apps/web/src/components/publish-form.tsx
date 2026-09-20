@@ -18,10 +18,10 @@ import {
   SERVICE_CATEGORIES,
   type ListingType,
 } from '@aucn/domain';
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 import { z } from 'zod';
-import { Link, useRouter, type AppLocale } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { api, ApiError, type BoardDto, type CityDto, type ListingDetail } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { cityName, LISTING_ROUTES } from '@/lib/format';
@@ -101,7 +101,6 @@ export function PublishForm({
   const tcm = useTranslations('community');
   const ta = useTranslations('auth');
   const tc = useTranslations('common');
-  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const { me, loading } = useAuth();
 
@@ -422,7 +421,7 @@ export function PublishForm({
                 options={boards.map((b) => b.slug)}
                 render={(s) => {
                   const b = boards.find((x) => x.slug === s);
-                  return b ? (locale === 'zh' ? b.nameZh : b.nameEn) : s;
+                  return b?.nameZh ?? s;
                 }}
               />
             </Field>
@@ -478,10 +477,7 @@ export function PublishForm({
             onChange={setCityId}
             options={cities.map((c) => c.id)}
             render={(id) =>
-              cityName(
-                cities.find((c) => c.id === id),
-                locale,
-              )
+              cityName(cities.find((c) => c.id === id))
             }
           />
         </Field>

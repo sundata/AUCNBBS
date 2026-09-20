@@ -1,9 +1,8 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { api, apiBase, ApiError, type EventDetail } from '@/lib/api';
 import { serverToken } from '@/lib/server-auth';
 import { cityName, formatDateTime, formatMoney } from '@/lib/format';
-import type { AppLocale } from '@/i18n/routing';
 import { CheckinForm, EventCancelButton, RsvpButton } from '@/components/event-panels';
 import { FavoriteButton } from '@/components/favorite-button';
 import { MapLink } from '@/components/map-embed';
@@ -25,7 +24,6 @@ export default async function EventPage({
     throw err;
   }
   const t = await getTranslations('events');
-  const loc = (await getLocale()) as AppLocale;
 
   return (
     <article className="max-w-3xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-4">
@@ -50,7 +48,7 @@ export default async function EventPage({
         <div className="flex gap-3">
           <dt className="w-28 text-muted">{t('when')}</dt>
           <dd>
-            {formatDateTime(e.startsAt, loc)} — {formatDateTime(e.endsAt, loc)}
+            {formatDateTime(e.startsAt)} — {formatDateTime(e.endsAt)}
           </dd>
         </div>
         <div className="flex gap-3">
@@ -60,8 +58,8 @@ export default async function EventPage({
               t('online')
             ) : (
               <>
-                {`${e.venue ?? ''} ${cityName(e.city, loc)}`.trim()}{' '}
-                {e.venue && <MapLink query={`${e.venue}, ${cityName(e.city, loc)}, Australia`} />}
+                {`${e.venue ?? ''} ${cityName(e.city)}`.trim()}{' '}
+                {e.venue && <MapLink query={`${e.venue}, ${cityName(e.city)}, Australia`} />}
               </>
             )}
           </dd>

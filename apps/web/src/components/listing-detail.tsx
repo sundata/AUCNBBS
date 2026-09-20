@@ -3,9 +3,9 @@ import { ContactButton } from './contact-button';
 import { FavoriteButton } from './favorite-button';
 import { ListingImages } from './listing-images';
 import { MapEmbed } from './map-embed';
-import { getLocale, getTranslations } from 'next-intl/server';
+import {  getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Link, type AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { api, ApiError, type ListingDetail } from '@/lib/api';
 import { listingJsonLd } from '@/lib/seo';
 import { serverToken } from '@/lib/server-auth';
@@ -40,7 +40,6 @@ export async function ListingDetailView({ id }: { id: string }) {
   const ti = await getTranslations('item');
   const ts = await getTranslations('service');
   const tp = await getTranslations('post');
-  const loc = (await getLocale()) as AppLocale;
   const d = l.details as Record<string, string | number | boolean | string[] | null>;
   const str = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
 
@@ -55,7 +54,7 @@ export async function ListingDetailView({ id }: { id: string }) {
             {t(`intentLabel.${l.type}.${l.intent}`)}
           </span>
           <span className="text-muted">
-            {cityName(l.city, loc)}
+            {cityName(l.city)}
             {l.suburb ? ` · ${l.suburb}` : ''}
           </span>
           {l.status !== 'active' && (
@@ -69,8 +68,8 @@ export async function ListingDetailView({ id }: { id: string }) {
           <ListingPrice l={l} />
         </div>
         <div className="text-xs text-muted mt-1">
-          {t('publishedAt')} {formatDate(l.publishedAt, loc)} · {t('expiresAt')}{' '}
-          {formatDate(l.expiresAt, loc)} · {l.viewCount} {t('views')}
+          {t('publishedAt')} {formatDate(l.publishedAt)} · {t('expiresAt')}{' '}
+          {formatDate(l.expiresAt)} · {l.viewCount} {t('views')}
         </div>
         <ListingImages listingId={l.id} readOnly />
         <div className="mt-6 whitespace-pre-wrap leading-7">{l.body}</div>
@@ -90,7 +89,7 @@ export async function ListingDetailView({ id }: { id: string }) {
               <Row label={th('bond')} value={formatMoney(d.bondMinor as number | null)} />
               <Row
                 label={th('availableFrom')}
-                value={d.availableFrom ? formatDate(String(d.availableFrom), loc) : null}
+                value={d.availableFrom ? formatDate(String(d.availableFrom)) : null}
               />
               <Row
                 label={th('minTerm', { weeks: Number(d.minTermWeeks ?? 0) })}
@@ -115,7 +114,7 @@ export async function ListingDetailView({ id }: { id: string }) {
               <Row label={tj('workRights')} value={str(d.workRightsRequired)} />
               <Row
                 label={tj('applyDeadline')}
-                value={d.applyDeadline ? formatDate(String(d.applyDeadline), loc) : null}
+                value={d.applyDeadline ? formatDate(String(d.applyDeadline)) : null}
               />
             </>
           )}
@@ -179,7 +178,7 @@ export async function ListingDetailView({ id }: { id: string }) {
             </Link>
           </div>
           <div className="text-xs text-muted">
-            {t('memberSince')} {formatDate(l.owner.memberSince, loc)}
+            {t('memberSince')} {formatDate(l.owner.memberSince)}
           </div>
           <div className="mt-3 text-xs text-muted">{t('contact')}</div>
           <div>

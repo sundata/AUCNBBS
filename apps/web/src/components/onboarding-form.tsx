@@ -1,8 +1,8 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { Link, useRouter, type AppLocale } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { api, ApiError, type CityDto } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { cityName } from '@/lib/format';
@@ -21,7 +21,6 @@ const INTERESTS = [
 export function OnboardingForm() {
   const t = useTranslations('onboarding');
   const tc = useTranslations('common');
-  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const { me, loading } = useAuth();
   const [cities, setCities] = useState<CityDto[]>([]);
@@ -119,7 +118,7 @@ export function OnboardingForm() {
           <option value="">{t('skipCity')}</option>
           {cities.map((c) => (
             <option key={c.id} value={c.id}>
-              {cityName(c, locale)}
+              {cityName(c)}
             </option>
           ))}
         </select>

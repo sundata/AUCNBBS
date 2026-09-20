@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { api, type Page, type ListingSummary } from '@/lib/api';
 import { getAccessToken, useAuth } from '@/lib/auth-client';
 import { Link } from '@/i18n/routing';
@@ -13,7 +13,6 @@ interface Payment {
 }
 export function BillingPanel() {
   const t = useTranslations('billing');
-  const locale = useLocale();
   const { me, loading } = useAuth();
   const [product, setProduct] = useState<{ available: boolean; amountMinor?: number }>();
   const [listings, setListings] = useState<ListingSummary[]>([]);
@@ -83,7 +82,7 @@ export function BillingPanel() {
               const result = await api<{ url: string }>('/billing/checkout', {
                 method: 'POST',
                 token: await getAccessToken(),
-                body: JSON.stringify({ listingId: selected, requestId: id, locale }),
+                body: JSON.stringify({ listingId: selected, requestId: id, locale: 'zh' }),
               });
               window.location.assign(result.url);
             })()

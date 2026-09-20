@@ -1,5 +1,5 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs, type ArticleSummary, type Page } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { first, type SearchParams } from '@/lib/server';
@@ -22,7 +22,6 @@ export default async function NewsPage({
   const t = await getTranslations('news');
   const th = await getTranslations('home');
   const tl = await getTranslations('listing');
-  const loc = (await getLocale()) as AppLocale;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -36,7 +35,7 @@ export default async function NewsPage({
               <Link href={`/news/${a.slug}`} className="group block">
                 <div className="text-xs text-muted flex gap-2">
                   <span className="text-brand">{t(`category.${a.category as 'platform'}`)}</span>
-                  <span>{formatDate(a.publishedAt, loc)}</span>
+                  <span>{formatDate(a.publishedAt)}</span>
                 </div>
                 <h2 className="font-semibold group-hover:text-brand">{a.title}</h2>
                 <p className="text-sm text-muted line-clamp-2">{a.summary}</p>
@@ -53,7 +52,7 @@ export default async function NewsPage({
           {tl('loadMore')}
         </Link>
       )}
-      <AutoIntel title={loc === 'zh' ? '本地媒体速览' : 'Local media roundup'} category="news" />
+      <AutoIntel title="本地媒体速览" category="news" />
     </div>
   );
 }

@@ -27,7 +27,7 @@ export async function generateMetadata({
     metadataBase: new URL(siteUrl()),
     title: { default: t('name'), template: `%s · ${t('name')}` },
     description: t('tagline'),
-    openGraph: { siteName: t('name'), locale: locale === 'zh' ? 'zh_CN' : 'en_AU' },
+    openGraph: { siteName: t('name'), locale: 'zh_CN' },
   };
 }
 
@@ -48,7 +48,7 @@ export default async function LocaleLayout({
     cities = [];
   }
   return (
-    <html lang={locale === 'zh' ? 'zh-CN' : 'en-AU'}>
+    <html lang="zh-CN">
       <body className="min-h-screen flex flex-col bg-surface">
         <NextIntlClientProvider>
           <SiteHeader cities={cities} />

@@ -55,7 +55,7 @@ test.afterAll(async () => {
 });
 // W-11: automated WCAG scan over the primary public surfaces. Serious and
 // critical violations fail the build; minor/moderate are surfaced in output.
-for (const path of ['/en', '/zh', '/en/login', '/en/market', '/en/community', '/en/news']) {
+for (const path of ['/zh', '/zh', '/zh/login', '/zh/market', '/zh/community', '/zh/news']) {
   test(`a11y ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState('networkidle');

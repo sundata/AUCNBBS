@@ -51,7 +51,7 @@ export function WeekendGuide() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const date = (v: string) =>
-    new Date(v).toLocaleString(zh ? 'zh-CN' : 'en-AU', {
+    new Date(v).toLocaleString('zh-CN', {
       timeZone: 'Australia/Sydney',
       month: 'short',
       day: 'numeric',
@@ -81,7 +81,7 @@ export function WeekendGuide() {
       })
       .catch(() => {
         if (active)
-          setError(zh ? '活动暂时无法加载，请重试。' : 'Could not load events. Please retry.');
+          setError('活动暂时无法加载，请重试。');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -101,7 +101,7 @@ export function WeekendGuide() {
       .catch(() => setIntel([]));
   }, [city]);
   useEffect(() => {
-    void loadSaved().catch(() => setError(zh ? '收藏加载失败' : 'Could not load saved events'));
+    void loadSaved().catch(() => setError('收藏加载失败'));
   }, [loadSaved, zh]);
   const reset = () => setPage(1);
   const rows = savedOnly ? saved : (data?.items ?? []);
@@ -110,15 +110,13 @@ export function WeekendGuide() {
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
         <div>
           <p className="text-sm font-medium text-brand">
-            SYDNEY · {zh ? '周末生活' : 'WEEKEND GUIDE'}
+            SYDNEY · {'周末生活'}
           </p>
           <h1 className="text-3xl sm:text-4xl font-semibold text-navy mt-2">
-            {zh ? '这周末，去哪儿？' : 'Where to this weekend?'}
+            {'这周末，去哪儿？'}
           </h1>
           <p className="mt-3 text-muted">
-            {zh
-              ? '找个附近的活动，把周末留给生活。所有时间均为悉尼当地时间。'
-              : 'Find something nearby. All times are local to Sydney.'}
+            {'找个附近的活动，把周末留给生活。所有时间均为悉尼当地时间。'}
           </p>
         </div>
         <button
@@ -126,13 +124,13 @@ export function WeekendGuide() {
           aria-pressed={savedOnly}
           onClick={() => setSavedOnly(!savedOnly)}
         >
-          {savedOnly ? (zh ? '返回活动' : 'Browse events') : zh ? '我的收藏' : 'Saved events'}
+          {savedOnly ? ('返回活动') : '我的收藏'}
         </button>
       </div>
       {!savedOnly && (
         <div className="rounded-2xl border border-line bg-white p-4 flex flex-wrap gap-4 items-center">
           <label className="space-x-2">
-            {zh ? '日期' : 'When'}
+            {'日期'}
             <select
               value={period}
               onChange={(e) => {
@@ -141,12 +139,12 @@ export function WeekendGuide() {
               }}
               className="border rounded-lg p-2"
             >
-              <option value="weekend">{zh ? '本周末' : 'This weekend'}</option>
-              <option value="upcoming">{zh ? '所有即将举行' : 'All upcoming'}</option>
+              <option value="weekend">{'本周末'}</option>
+              <option value="upcoming">{'所有即将举行'}</option>
             </select>
           </label>
           <label className="space-x-2">
-            {zh ? '城市' : 'City'}
+            {'城市'}
             <select
               value={city}
               onChange={(e) => {
@@ -156,16 +154,16 @@ export function WeekendGuide() {
               }}
               className="border rounded-lg p-2"
             >
-              <option value="">{zh ? '全部城市' : 'All cities'}</option>
+              <option value="">{'全部城市'}</option>
               {cities.map((c) => (
                 <option key={c.id} value={c.slug}>
-                  {zh ? c.nameZh : c.nameEn}
+                  {c.nameZh}
                 </option>
               ))}
             </select>
           </label>
           <label className="space-x-2">
-            {zh ? '类型' : 'Type'}
+            {'类型'}
             <select
               value={category}
               onChange={(e) => {
@@ -174,26 +172,26 @@ export function WeekendGuide() {
               }}
               className="border rounded-lg p-2"
             >
-              <option value="">{zh ? '全部类型' : 'All types'}</option>
+              <option value="">{'全部类型'}</option>
               {CATS.map((c) => (
                 <option key={c} value={c}>
-                  {zh
-                    ? (
-                        {
-                          general: '综合',
-                          family: '亲子',
-                          social: '社交',
-                          market: '集市',
-                          festival: '节庆',
-                        } as const
-                      )[c]
-                    : c[0].toUpperCase() + c.slice(1)}
+                  {
+                    (
+                      {
+                        general: '综合',
+                        family: '亲子',
+                        social: '社交',
+                        market: '集市',
+                        festival: '节庆',
+                      } as const
+                    )[c]
+                  }
                 </option>
               ))}
             </select>
           </label>
           <label className="space-x-2">
-            {zh ? '区域' : 'Suburb'}
+            {'区域'}
             <select
               value={suburb}
               onChange={(e) => {
@@ -202,16 +200,16 @@ export function WeekendGuide() {
               }}
               className="border rounded-lg p-2"
             >
-              <option value="">{zh ? '悉尼所有区域' : 'All Sydney suburbs'}</option>
+              <option value="">{'悉尼所有区域'}</option>
               {data?.suburbs.map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>
           </label>
           {[
-            [free, setFree, zh ? '免费' : 'Free'],
-            [family, setFamily, zh ? '适合亲子' : 'Family friendly'],
-            [indoor, setIndoor, zh ? '室内活动' : 'Indoors'],
+            [free, setFree, '免费'],
+            [family, setFamily, '适合亲子'],
+            [indoor, setIndoor, '室内活动'],
           ].map(([checked, setter, label], i) => (
             <label className="flex gap-2 items-center px-2 py-2" key={i}>
               <input
@@ -229,23 +227,21 @@ export function WeekendGuide() {
       )}
       {savedOnly && !me && (
         <Link className="text-brand underline" href="/login?next=/weekend">
-          {zh ? '登录后可收藏活动' : 'Sign in to save events'}
+          {'登录后可收藏活动'}
         </Link>
       )}
       {!savedOnly && intel.length > 0 && (
         <section className="rounded-2xl border border-line bg-white p-5 space-y-3">
           <div className="flex items-baseline justify-between">
             <h2 className="text-lg font-semibold text-navy">
-              {zh ? '最新活动情报' : 'Latest event intel'}
+              {'最新活动情报'}
             </h2>
             <Link href="/pulse?category=event" className="text-sm text-brand">
-              {zh ? '查看全部 →' : 'View all →'}
+              {'查看全部 →'}
             </Link>
           </div>
           <p className="text-sm text-muted">
-            {zh
-              ? '自动采集自本地活动媒体，点击跳主办方原文。'
-              : 'Auto-collected from local event media — links open the organiser’s page.'}
+            {'自动采集自本地活动媒体，点击跳主办方原文。'}
           </p>
           <ul className="divide-y divide-line">
             {intel.map((item) => (
@@ -254,7 +250,7 @@ export function WeekendGuide() {
                   href={`/pulse/${item.id}`}
                   className="font-medium text-navy hover:text-brand"
                 >
-                  {zh ? (item.titleZh ?? item.title) : item.title}
+                  {item.titleZh ?? item.title}
                 </Link>
                 <p className="text-sm text-muted mt-1">
                   {item.sourceName}
@@ -272,17 +268,13 @@ export function WeekendGuide() {
         </p>
       )}
       {!savedOnly && loading ? (
-        <p role="status">{zh ? '正在查找活动…' : 'Loading events…'}</p>
+        <p role="status">{'正在查找活动…'}</p>
       ) : (
         <>
           <p className="text-sm text-muted">
             {savedOnly
-              ? zh
-                ? '收藏会保留，已结束或取消的活动会标明状态。'
-                : 'Saved events include ended or cancelled listings.'
-              : zh
-                ? `找到 ${data?.total ?? 0} 个活动`
-                : `${data?.total ?? 0} events found`}
+              ? '收藏会保留，已结束或取消的活动会标明状态。'
+              : `找到 ${data?.total ?? 0} 个活动`}
           </p>
           {rows.length === 0 &&
             (intel.length > 0 && !savedOnly ? (
@@ -294,7 +286,7 @@ export function WeekendGuide() {
             ) : (
               <div className="border border-dashed border-line rounded-2xl p-10 text-center">
                 <h2 className="text-lg font-medium">
-                  {zh ? '还没有符合条件的活动' : 'No matching events yet'}
+                  {'还没有符合条件的活动'}
                 </h2>
                 <p className="mt-2 text-muted">
                   {zh
@@ -330,11 +322,11 @@ export function WeekendGuide() {
                   <h2 className="text-xl text-navy font-semibold mt-3">{event.title}</h2>
                   <p className="mt-3 text-muted leading-relaxed flex-1">{event.summary}</p>
                   <p className="mt-4 font-medium">
-                    {event.startsAt ? date(event.startsAt) : zh ? '日期待确认' : 'Date unconfirmed'}
+                    {event.startsAt ? date(event.startsAt) : '日期待确认'}
                   </p>
                   {event.endsAt && (
                     <p className="text-sm text-muted">
-                      {zh ? '至 ' : 'Until '}
+                      {'至 '}
                       {date(event.endsAt)}
                     </p>
                   )}
@@ -356,12 +348,12 @@ export function WeekendGuide() {
                     )}
                     {event.family && (
                       <span className="bg-blue-50 text-blue-900 rounded px-2 py-1">
-                        {zh ? '亲子' : 'Family'}
+                        {'亲子'}
                       </span>
                     )}
                     {event.indoor && (
                       <span className="bg-blue-50 text-blue-900 rounded px-2 py-1">
-                        {zh ? '室内' : 'Indoors'}
+                        {'室内'}
                       </span>
                     )}
                   </div>
@@ -397,7 +389,7 @@ export function WeekendGuide() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {zh ? '主办方详情' : 'View original'}
+                      {'主办方详情'}
                     </a>
                     {me ? (
                       <button
@@ -414,17 +406,17 @@ export function WeekendGuide() {
                             });
                             await loadSaved();
                           } catch {
-                            setError(zh ? '收藏操作失败，请重试' : 'Could not update saved event');
+                            setError('收藏操作失败，请重试');
                           } finally {
                             setBusy(null);
                           }
                         }}
                       >
-                        {isSaved ? (zh ? '取消收藏' : 'Unsave') : zh ? '收藏' : 'Save'}
+                        {isSaved ? ('取消收藏') : '收藏'}
                       </button>
                     ) : (
                       <Link className="border rounded-lg px-3 py-2" href="/login?next=/weekend">
-                        {zh ? '登录收藏' : 'Sign in to save'}
+                        {'登录收藏'}
                       </Link>
                     )}
                     {!unavailable && (
@@ -432,17 +424,17 @@ export function WeekendGuide() {
                         className="text-brand underline py-2"
                         href={`${apiBase()}/api/v1/weekend/events/${event.id}/calendar`}
                       >
-                        {zh ? '加入日历提醒' : 'Add calendar reminder'}
+                        {'加入日历提醒'}
                       </a>
                     )}
                   </div>
                   <p className="text-sm text-muted mt-4">
-                    {zh ? '来源：' : 'Source: '}
+                    {'来源：'}
                     {event.sourceName}
                     {event.reviewedAt && (
                       <>
                         {' '}
-                        · {zh ? '核验于 ' : 'Reviewed '}
+                        · {'核验于 '}
                         {date(event.reviewedAt)}
                       </>
                     )}
@@ -458,7 +450,7 @@ export function WeekendGuide() {
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
               >
-                {zh ? '上一页' : 'Previous'}
+                {'上一页'}
               </button>
               <span>{page}</span>
               <button
@@ -466,7 +458,7 @@ export function WeekendGuide() {
                 disabled={page * 20 >= (data?.total ?? 0)}
                 onClick={() => setPage(page + 1)}
               >
-                {zh ? '下一页' : 'Next'}
+                {'下一页'}
               </button>
             </div>
           )}

@@ -1,5 +1,5 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs, type HomeFeed } from '@/lib/api';
 import { cityName, formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
@@ -23,7 +23,6 @@ export default async function HomePage({
   const t = await getTranslations('home');
   const tn = await getTranslations('news');
   const tc = await getTranslations('community');
-  const loc = (await getLocale()) as AppLocale;
   const citySuffix = city ? qs({ city: city.slug }) : '';
 
   return (
@@ -34,19 +33,15 @@ export default async function HomePage({
       >
         <span className="text-sm text-brand">SYDNEY · WEEKENDS</span>
         <h2 className="mt-2 text-2xl font-semibold text-navy">
-          {loc === 'zh' ? '悉尼这周末，去哪儿？ →' : 'Your Sydney weekend starts here →'}
+          悉尼这周末，去哪儿？ →
         </h2>
-        <p className="mt-2 text-muted">
-          {loc === 'zh'
-            ? '找免费、亲子和室内活动，收藏心仪去处。'
-            : 'Find free, family-friendly and indoor events. Save your favourites.'}
-        </p>
+        <p className="mt-2 text-muted">{'找免费、亲子和室内活动，收藏心仪去处。'}</p>
       </Link>
       <div className="relative overflow-hidden rounded-3xl bg-navy px-5 py-7 sm:px-8 sm:py-9 text-white shadow-[0_14px_36px_rgba(18,48,74,0.18)]">
         <div className="relative max-w-2xl">
           <p className="text-xs uppercase tracking-[0.18em] text-white/60 mb-2">AUCN Hub</p>
           <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight">
-            {city ? cityName(city, loc) : t('cityHint')}
+            {city ? cityName(city) : t('cityHint')}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-white/75">{t('tagline')}</p>
         </div>
@@ -67,7 +62,7 @@ export default async function HomePage({
                         <span className="text-brand">
                           {tn(`category.${a.category as 'platform'}`)}
                         </span>
-                        <span>{formatDate(a.publishedAt, loc)}</span>
+                        <span>{formatDate(a.publishedAt)}</span>
                       </div>
                       <h3
                         className={`group-hover:text-brand ${i === 0 ? 'text-lg font-semibold' : 'font-medium'}`}

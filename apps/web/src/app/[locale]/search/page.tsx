@@ -1,5 +1,5 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link, type AppLocale } from '@/i18n/routing';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { api, qs, type SearchResult } from '@/lib/api';
 import { formatDate, LISTING_ROUTES } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
@@ -30,7 +30,6 @@ export default async function SearchPage({
       )
     : null;
   const t = await getTranslations('search');
-  const loc = (await getLocale()) as AppLocale;
 
   const hrefFor = (h: SearchResult['hits'][number]) =>
     h.kind === 'listing' && h.listingType
@@ -88,7 +87,7 @@ export default async function SearchPage({
             <Link href={hrefFor(h)} className="group block">
               <div className="text-xs text-muted flex gap-2">
                 <span className="text-brand">{t(`kind.${h.kind}`)}</span>
-                <span>{formatDate(h.createdAt, loc)}</span>
+                <span>{formatDate(h.createdAt)}</span>
               </div>
               <div className="font-medium group-hover:text-brand">{h.title}</div>
               <p className="text-sm text-muted line-clamp-2">{h.snippet}</p>

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import {  useTranslations } from 'next-intl';
 import { startAuthentication } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser';
 import { api } from '@/lib/api';
@@ -8,7 +8,6 @@ import { writeAuth } from '@/lib/auth-client';
 import { useRouter } from '@/i18n/routing';
 export function AlternateLogin() {
   const t = useTranslations('auth');
-  const locale = useLocale();
   const router = useRouter();
   const [providers, setProviders] = useState<{ oauth: string[]; phone: boolean }>({
     oauth: [],
@@ -42,7 +41,7 @@ export function AlternateLogin() {
               sessionStorage.setItem('aucn.oauth.binding', binding);
               const result = await api<{ url: string }>('/auth/oauth/start', {
                 method: 'POST',
-                body: JSON.stringify({ provider, locale, binding }),
+                body: JSON.stringify({ provider, locale: 'zh', binding }),
               });
               window.location.assign(result.url);
             })()

@@ -1,6 +1,6 @@
-import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server';
+import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Link, type AppLocale } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { api, ApiError, type PostDetail } from '@/lib/api';
 import { serverToken } from '@/lib/server-auth';
 import { cityName, formatDate } from '@/lib/format';
@@ -25,7 +25,6 @@ export default async function PostPage({
     throw e;
   }
   const t = await getTranslations('community');
-  const loc = (await getLocale()) as AppLocale;
   const roots = p.comments.filter((c) => !c.parentId);
   const children = (parentId: string) => p.comments.filter((c) => c.parentId === parentId);
 
@@ -48,8 +47,8 @@ export default async function PostPage({
           </span>
           {p.edited && <span>{t('edited')}</span>}
           {p.locked && <span>{t('locked')}</span>}
-          {p.city && <span>{cityName(p.city, loc)}</span>}
-          <span>{formatDate(p.createdAt, loc)}</span>
+          {p.city && <span>{cityName(p.city)}</span>}
+          <span>{formatDate(p.createdAt)}</span>
         </div>
         <h1 className="text-2xl font-bold mt-2 mb-4">{p.title}</h1>
         <div className="whitespace-pre-wrap leading-7">{p.body}</div>
@@ -68,7 +67,7 @@ export default async function PostPage({
             <li key={c.id} className="text-sm">
               <div className="text-xs text-muted">
                 {c.author.anonymous ? t('anonymousName') : c.author.displayName} ·{' '}
-                {formatDate(c.createdAt, loc)}
+                {formatDate(c.createdAt)}
                 {c.edited && ` · ${t('edited')}`}
                 {c.accepted && ` · ${t('accepted')}`}
               </div>
@@ -91,7 +90,7 @@ export default async function PostPage({
                     <li key={r.id}>
                       <div className="text-xs text-muted">
                         {r.author.anonymous ? t('anonymousName') : r.author.displayName} ·{' '}
-                        {formatDate(r.createdAt, loc)}
+                        {formatDate(r.createdAt)}
                       </div>
                       <p className="whitespace-pre-wrap mt-0.5">{r.body}</p>
                     </li>

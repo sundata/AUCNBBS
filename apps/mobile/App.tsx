@@ -98,8 +98,7 @@ export default function App() {
   );
 }
 function Main() {
-  const [locale] = useState<'zh' | 'en'>('zh');
-  const t = useCallback((key: string) => label(locale, key), [locale]);
+  const t = useCallback((key: string) => label(key), []);
   const [screen, setScreen] = useState<Screen>('browse');
   const [me, setMe] = useState<Me | null>(null);
   const [cities, setCities] = useState<City[]>([]);
@@ -229,7 +228,7 @@ function Main() {
       <Button
         title={
           row.title ??
-          (locale === 'zh' ? row.nameZh : row.nameEn) ??
+          row.nameZh ??
           row.peer?.displayName ??
           row.body ??
           row.id
@@ -273,7 +272,7 @@ function Main() {
       />
       {row.unread ? (
         <Text>
-          {row.unread} {locale === 'zh' ? '条未读' : 'unread'}
+          {row.unread} 条未读
         </Text>
       ) : null}
       {screen === 'me' && row.subjectType && (
@@ -283,7 +282,7 @@ function Main() {
       )}
       {screen === 'events' && row.startsAt && (
         <Text>
-          {new Date(row.startsAt).toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-AU')}
+          {new Date(row.startsAt).toLocaleString('zh-CN')}
           {row.venue ? ` · ${row.venue}` : ''}
           {row.goingCount !== undefined ? ` · ${row.goingCount}` : ''}
         </Text>
@@ -412,11 +411,7 @@ function Main() {
                 values={['', ...cities.map((c) => c.id)]}
                 onChange={setCity}
                 render={(id) =>
-                  id
-                    ? ((locale === 'zh'
-                        ? cities.find((c) => c.id === id)?.nameZh
-                        : cities.find((c) => c.id === id)?.nameEn) ?? '')
-                    : t('nav.allCities')
+                  id ? (cities.find((c) => c.id === id)?.nameZh ?? '') : t('nav.allCities')
                 }
               />
               <Button title={t('nav.search')} onPress={() => go('search')} />
@@ -558,7 +553,6 @@ function Main() {
           {(screen === 'publish' || screen === 'edit') && me && (
             <Publish
               key={`${screen}-${detail?.id ?? ''}`}
-              locale={locale}
               cities={cities}
               initial={screen === 'edit' ? (detail ?? undefined) : undefined}
               onDone={() => go('me')}
@@ -575,7 +569,7 @@ function Main() {
                 onChange={setBoard}
                 render={(slug) => {
                   const b = boards.find((b) => b.slug === slug);
-                  return locale === 'zh' ? (b?.nameZh ?? '') : (b?.nameEn ?? '');
+                  return b?.nameZh ?? '';
                 }}
               />
               <TextInput
@@ -721,7 +715,7 @@ function Main() {
           {screen === 'business' && biz && (
             <>
               <Text style={{ fontSize: 24, fontWeight: 'bold' }}>
-                {locale === 'zh' ? (biz.nameZh ?? biz.nameEn) : (biz.nameEn ?? biz.nameZh)}
+                {biz.nameZh ?? biz.nameEn}
               </Text>
               <Text>
                 {biz.category}

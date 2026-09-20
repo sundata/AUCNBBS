@@ -1,7 +1,7 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
-import { Link, usePathname, type AppLocale } from '@/i18n/routing';
+import {  useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/routing';
 import type { CityDto } from '@/lib/api';
 import { useAuth } from '@/lib/auth-client';
 import { cityName } from '@/lib/format';
@@ -23,7 +23,6 @@ const NAV = [
 
 export function SiteHeader({ cities }: { cities: CityDto[] }) {
   const t = useTranslations('nav');
-  const locale = useLocale() as AppLocale;
   const pathname = usePathname();
   const { me, loading, logout } = useAuth();
 
@@ -35,13 +34,13 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
             href="/"
             className="shrink-0 text-xl sm:text-2xl font-semibold tracking-tight text-navy whitespace-nowrap"
           >
-            {locale === 'zh' ? '澳中生活圈' : 'AUCN Hub'}
+            澳中生活圈
           </Link>
           <div className="hidden sm:block shrink-0">
             <CitySelect cities={cities} />
           </div>
           <form
-            action={`/${locale}/search`}
+            action="/zh/search"
             className="order-3 flex w-full sm:order-none sm:flex-1 sm:min-w-40"
           >
             <input
@@ -113,7 +112,7 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
             <span className="ml-auto py-2 text-muted hidden sm:inline">
               {cities
                 .filter((c) => c.isLaunch)
-                .map((c) => cityName(c, locale))
+                .map((c) => cityName(c))
                 .join(' · ')}
             </span>
           )}
