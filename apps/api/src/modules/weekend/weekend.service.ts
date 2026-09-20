@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { eventInput, fingerprint, parseFeed, sourceInput } from './weekend.helpers';
 import { fetchFeed } from './feed-fetch';
+import { extractCity, extractEventDate, extractLocation } from '../../common/extract';
+import { screenText } from '../../common/risk';
 
 @Injectable()
 export class WeekendService implements OnModuleInit, OnModuleDestroy {
@@ -47,20 +49,34 @@ export class WeekendService implements OnModuleInit, OnModuleDestroy {
     source: { id: string; cityId: string | null; category: string },
     rows: z.infer<typeof eventInput>[],
   ) {
-    const result = await this.prisma.weekendEvent.createMany({
-      skipDuplicates: true,
-      data: rows.map((row) => ({
+    const cities = await this.prisma.city.findMany({
+      select: { id: true, nameEn: true, timezone: true },
+    });
+    const data = [];
+    for (const row of rows) {
+      const signal = `${row.title} ${row.sourceName}`;
+      const cityName = extractCity(signal);
+      const city = cityName ? cities.find((c) => c.nameEn === cityName) : undefined;
+      const date = extractEventDate(signal, new Date(), city?.timezone ?? 'Australia/Sydney');
+      // Dated leads publish automatically when the risk screen is clean;
+      // undated posts stay as pending editorial leads.
+      const publishable =
+        date != null && date.end > new Date() && !(await screenText(this.prisma, signal)).length;
+      data.push({
         ...row,
         sourceId: source.id,
-        cityId: row.cityId ?? source.cityId,
+        cityId: row.cityId ?? source.cityId ?? city?.id ?? null,
+        suburb: extractLocation(signal) ?? row.suburb,
         category: row.category === 'general' ? source.category : row.category,
+        status: publishable ? 'published' : 'pending',
         fingerprint: fingerprint(row.sourceUrl, row.startsAt),
         // A feed is not an editorial introduction: require the reviewer to write it.
         summary: '',
-        startsAt: row.startsAt ? new Date(row.startsAt) : null,
-        endsAt: row.endsAt ? new Date(row.endsAt) : null,
-      })),
-    });
+        startsAt: date?.start ?? (row.startsAt ? new Date(row.startsAt) : null),
+        endsAt: date?.end ?? (row.endsAt ? new Date(row.endsAt) : null),
+      });
+    }
+    const result = await this.prisma.weekendEvent.createMany({ skipDuplicates: true, data });
     return result.count;
   }
   async tick() {

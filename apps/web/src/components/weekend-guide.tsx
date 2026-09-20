@@ -200,7 +200,7 @@ export function WeekendGuide() {
               }}
               className="border rounded-lg p-2"
             >
-              <option value="">{'悉尼所有区域'}</option>
+              <option value="">{'全部区域'}</option>
               {data?.suburbs.map((s) => (
                 <option key={s}>{s}</option>
               ))}

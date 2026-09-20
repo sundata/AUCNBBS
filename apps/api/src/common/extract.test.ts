@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractLocation, extractPrice } from './extract';
+import { extractCity, extractEventDate, extractLocation, extractPrice } from './extract';
 
 describe('extractPrice', () => {
   it('parses weekly rent patterns', () => {
@@ -47,5 +47,51 @@ describe('extractLocation', () => {
 
   it('returns null when nothing matches', () => {
     expect(extractLocation('随便聊聊天气')).toBeNull();
+  });
+});
+
+describe('extractCity', () => {
+  it('maps suburbs to their city', () => {
+    expect(extractCity('Eastwood 周六有人打球吗')).toBe('Sydney');
+    expect(extractCity('Box Hill 读书会')).toBe('Melbourne');
+    expect(extractCity('堪培拉周末爬山')).toBe('Canberra');
+    expect(extractCity('随便聊聊')).toBeNull();
+  });
+});
+
+describe('extractEventDate', () => {
+  const now = new Date('2026-09-20T00:00:00Z'); // Sunday in Sydney
+
+  it('parses explicit month/day dates', () => {
+    const r = extractEventDate('10月3日 墨尔本中秋聚餐', now);
+    expect(r).not.toBeNull();
+    expect(r!.start.toISOString()).toBe('2026-10-03T00:00:00.000Z');
+  });
+
+  it('rolls explicit dates into next year when past', () => {
+    const r = extractEventDate('3月29日 读书会', now);
+    expect(r!.start.getUTCFullYear()).toBe(2027);
+  });
+
+  it('parses weekday expressions', () => {
+    const r = extractEventDate('本周六下午2点 Eastwood 羽毛球', now);
+    expect(r).not.toBeNull();
+    // Saturday 2026-09-26 14:00 Sydney = 04:00 UTC
+    expect(r!.start.toISOString()).toBe('2026-09-26T04:00:00.000Z');
+    expect(r!.end.getTime() - r!.start.getTime()).toBe(3 * 3600_000);
+  });
+
+  it('parses next-week expressions', () => {
+    const r = extractEventDate('下周三晚上7点 聚餐', now);
+    expect(r!.start.toISOString()).toBe('2026-09-30T09:00:00.000Z');
+  });
+
+  it('parses 周末 as Saturday', () => {
+    const r = extractEventDate('周末去 Sunnybank 赶集', now);
+    expect(r!.start.getUTCDay?.() ?? new Date(r!.start).getUTCDay()).toBe(6);
+  });
+
+  it('returns null without any date expression', () => {
+    expect(extractEventDate('Eastwood 两房出租 $600一周', now)).toBeNull();
   });
 });
