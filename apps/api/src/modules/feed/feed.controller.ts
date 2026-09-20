@@ -24,6 +24,13 @@ export interface HomeFeedDto {
     coverUrl: string | null;
     publishedAt: string | null;
   }[];
+  features: {
+    id: string;
+    slug: string;
+    title: string;
+    summary: string;
+    coverUrl: string | null;
+  }[];
   hotPosts: {
     id: string;
     boardSlug: string;
@@ -44,7 +51,7 @@ export class FeedController {
     @Query(new ZodPipe(feedQuerySchema)) query: z.infer<typeof feedQuerySchema>,
   ): Promise<HomeFeedDto> {
     const cityFilter = query.cityId ? { cityId: query.cityId } : {};
-    const [city, articles, posts, ...perType] = await Promise.all([
+    const [city, articles, features, posts, ...perType] = await Promise.all([
       query.cityId
         ? this.prisma.city.findUnique({
             where: { id: query.cityId },
@@ -55,6 +62,12 @@ export class FeedController {
         where: { status: 'published' },
         orderBy: { publishedAt: 'desc' },
         take: 6,
+      }),
+      this.prisma.article.findMany({
+        where: { status: 'published', coverUrl: { not: null } },
+        orderBy: { publishedAt: 'desc' },
+        take: 4,
+        select: { id: true, slug: true, title: true, summary: true, coverUrl: true },
       }),
       this.prisma.post.findMany({
         where: {
@@ -86,6 +99,7 @@ export class FeedController {
         coverUrl: a.coverUrl,
         publishedAt: a.publishedAt?.toISOString() ?? null,
       })),
+      features,
       hotPosts: posts.map((p) => ({
         id: p.id,
         boardSlug: p.board.slug,

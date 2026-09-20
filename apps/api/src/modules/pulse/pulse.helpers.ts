@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { z } from 'zod';
 import { publicUrl } from '../weekend/weekend.helpers';
+import { fetchFeed } from '../weekend/feed-fetch';
 import { decodeEntities } from '../../common/entities';
 
 export const FEED_CATEGORIES = [
@@ -218,6 +219,30 @@ export function parseNewsFeed(body: string, limit = 50): z.infer<typeof feedItem
     });
     return parsed.success ? [parsed.data] : [];
   });
+}
+
+/** Top Google Trends queries for Australia — feeds the daily hot-topic feature. */
+export async function fetchAuTrends(
+  limit = 15,
+): Promise<{ title: string; traffic: string; news: string[] }[]> {
+  const body = await fetchFeed('https://trends.google.com/trending/rss?geo=AU');
+  const doc = new XMLParser({
+    ignoreAttributes: false,
+    processEntities: false,
+    parseTagValue: false,
+  }).parse(body);
+  const items = doc.rss?.channel?.item ?? [];
+  return (Array.isArray(items) ? items : [items])
+    .slice(0, limit)
+    .map((it: Record<string, unknown>) => {
+      const news = it['ht:news_item_title'] ?? it['news_item_title'];
+      return {
+        title: text(it.title),
+        traffic: text(it['ht:approx_traffic'] ?? it['approx_traffic']),
+        news: (Array.isArray(news) ? news : [news]).map(text).filter(Boolean).slice(0, 2),
+      };
+    })
+    .filter((t: { title: string }) => t.title);
 }
 
 /** Partner JSON feeds: `{ items: [...] }` or a bare array of item-shaped rows. */

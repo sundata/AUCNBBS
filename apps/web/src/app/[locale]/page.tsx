@@ -46,6 +46,40 @@ export default async function HomePage({
           <p className="mt-2 text-sm sm:text-base text-white/75">{t('tagline')}</p>
         </div>
       </div>
+      {feed.features.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-lg text-navy">今日画报</h2>
+            <Link href="/news" className="text-sm text-brand">
+              {t('more')}
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {feed.features.map((a, i) => (
+              <Link
+                key={a.id}
+                href={`/news/${a.slug}`}
+                className={`group relative overflow-hidden rounded-2xl aspect-[2/1] ${i === 0 ? 'sm:col-span-2' : ''}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={a.coverUrl ?? ''}
+                  alt={a.title}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  className="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 p-4">
+                  <h3 className="text-white font-semibold text-lg leading-snug drop-shadow">
+                    {a.title}
+                  </h3>
+                  <p className="text-white/70 text-sm line-clamp-1 mt-1">{a.summary}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       <AdSlot placement="home" cityId={city?.id} label={t('sponsored')} />
       <PulseDashboard citySlug={city?.slug} />
       <div className="grid gap-5 lg:grid-cols-3">

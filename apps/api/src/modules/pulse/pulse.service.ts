@@ -14,6 +14,7 @@ import {
   titleHash,
   translateToZh,
   aiBrief,
+  fetchAuTrends,
   pexelsPhotos,
 } from './pulse.helpers';
 
@@ -277,6 +278,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       await this.maybeWriteTopic();
       await this.maybeWriteBrief();
       await this.maybeWriteFeature();
+      await this.maybeWriteHotFeature();
     } catch {
       this.logger.error('Pulse collection failed; retrying next minute');
     } finally {
@@ -586,7 +588,80 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
     if (!doc.title || !doc.body || doc.body.length < 200) return null;
-    const photos = await pexelsPhotos(doc.imageQuery ?? spec.hint);
+    const illustrated = await this.illustrate(doc, slug, spec.hint);
+    if (!illustrated) return null;
+    return { ...illustrated, source: 'AUCN AI 画报' };
+  }
+
+  /**
+   * Afternoon feature built on Australia's trending searches — the LLM picks
+   * the one trend worth a Chinese-Australian reader's attention and writes a
+   * short illustrated explainer around it.
+   */
+  async maybeWriteHotFeature(now = new Date()) {
+    const p = this.sydneyParts(now);
+    if (Number(p.hour) * 60 + Number(p.minute) < 13 * 60 + 30) return;
+    const day = `${p.year}-${p.month}-${p.day}`;
+    const slug = `hot-${day}-zh`;
+    const exists = await this.prisma.article.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (exists) return;
+    const trends = await fetchAuTrends().catch(() => []);
+    if (!trends.length) return;
+    const list = trends
+      .map(
+        (t, i) =>
+          `${i + 1}. ${t.title}（搜索热度 ${t.traffic}）` +
+          (t.news.length ? `｜相关新闻：${t.news.join('；')}` : ''),
+      )
+      .join('\n');
+    const raw = await aiBrief(
+      `你是澳洲华人生活平台「澳中生活圈」的编辑。下面是今天澳洲 Google 热搜榜：\n\n${list}\n\n` +
+        `从中选出最值得澳洲华人关注的一条（与华人生活、中澳关系、民生、安全、移民留学、消费相关的优先；纯体育娱乐且与华人无关的跳过）。\n` +
+        `围绕它写一篇 300-500字中文短文：开头一段点题，然后用 "## 小标题" 分 2 节，结合相关新闻说明发生了什么、对在澳华人有什么影响或看点。不要编造榜单之外的事实；信息不足时聚焦"为什么值得关注"。\n` +
+        `严格输出 JSON（不要输出其他内容）：{"pick": 序号, "title": "≤22字", "summary": "≤50字", "body": "...", "imageQuery": "2-4个英文单词的搜图关键词"}\n` +
+        `如果一条都不适合，输出 {"pick": null}`,
+      1800,
+    );
+    const match = raw?.match(/\{[\s\S]*\}/);
+    if (!match) return;
+    let doc: { pick?: number | null; title?: string; summary?: string; body?: string; imageQuery?: string };
+    try {
+      doc = JSON.parse(match[0]);
+    } catch {
+      return;
+    }
+    if (doc.pick == null) return;
+    const illustrated = await this.illustrate(doc, slug, trends[doc.pick - 1]?.title);
+    if (!illustrated) return;
+    await this.prisma.article.create({
+      data: {
+        slug,
+        authorId: await this.digestAuthorId(),
+        locale: 'zh',
+        category: 'ai_feature',
+        collection: 'hot',
+        status: 'published',
+        publishedAt: now,
+        source: 'Google Trends 热搜',
+        ...illustrated,
+      },
+    });
+  }
+
+  /**
+   * Attach cover + optional inline photo to an LLM-written piece. Falls back
+   * to the generated branded SVG cover when no stock photo is available.
+   */
+  private async illustrate(
+    doc: { title?: string; summary?: string; body?: string; imageQuery?: string },
+    slug: string,
+    imageHint?: string,
+  ): Promise<{ title: string; summary: string; body: string; coverUrl: string } | null> {
+    if (!doc.title || !doc.body || doc.body.length < 200) return null;
+    const photos = await pexelsPhotos(doc.imageQuery ?? imageHint ?? 'Australia');
     const cover = photos[0];
     const inline = photos[1];
     let body = doc.body.slice(0, 4000);
@@ -602,7 +677,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       coverUrl:
         cover?.url ??
         `${process.env.API_PUBLIC_URL ?? 'http://localhost:4000'}/api/v1/articles/${slug}/cover.svg`,
-      source: 'AUCN AI 画报',
     };
   }
 

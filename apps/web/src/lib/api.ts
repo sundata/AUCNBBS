@@ -155,6 +155,7 @@ export interface PulseDashboard {
 export interface HomeFeed {
   city: { id: string; slug: string; nameZh: string; nameEn: string } | null;
   headlines: ArticleSummary[];
+  features: { id: string; slug: string; title: string; summary: string; coverUrl: string | null }[];
   hotPosts: {
     id: string;
     boardSlug: string;
