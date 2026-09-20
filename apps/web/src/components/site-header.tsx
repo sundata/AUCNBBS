@@ -1,8 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
-import { Link, usePathname, useRouter, type AppLocale } from '@/i18n/routing';
+import { Link, usePathname, type AppLocale } from '@/i18n/routing';
 import type { CityDto } from '@/lib/api';
 import { useAuth } from '@/lib/auth-client';
 import { cityName } from '@/lib/format';
@@ -26,11 +25,7 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
   const t = useTranslations('nav');
   const locale = useLocale() as AppLocale;
   const pathname = usePathname();
-  const router = useRouter();
-  const search = useSearchParams();
   const { me, loading, logout } = useAuth();
-  const otherLocale: AppLocale = locale === 'zh' ? 'en' : 'zh';
-  const query = search.toString();
 
   return (
     <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b border-line shadow-[0_1px_0_rgba(18,48,74,0.04)]">
@@ -96,15 +91,6 @@ export function SiteHeader({ cities }: { cities: CityDto[] }) {
                 {t('login')}
               </Link>
             )}
-            <button
-              type="button"
-              className="text-muted hover:text-brand border border-line rounded-lg px-2 py-1 bg-white"
-              onClick={() =>
-                router.replace(`${pathname}${query ? `?${query}` : ''}`, { locale: otherLocale })
-              }
-            >
-              {t('switchLocale')}
-            </button>
           </nav>
         </div>
         <div className="sm:hidden pb-2">

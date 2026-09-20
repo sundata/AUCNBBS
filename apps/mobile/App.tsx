@@ -98,7 +98,7 @@ export default function App() {
   );
 }
 function Main() {
-  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  const [locale] = useState<'zh' | 'en'>('zh');
   const t = useCallback((key: string) => label(locale, key), [locale]);
   const [screen, setScreen] = useState<Screen>('browse');
   const [me, setMe] = useState<Me | null>(null);
@@ -348,12 +348,8 @@ function Main() {
           }}
         >
           <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#b42336' }}>
-            {locale === 'zh' ? '澳中生活圈' : 'AUCN Hub'}
+            澳中生活圈
           </Text>
-          <Button
-            title={locale === 'zh' ? 'English' : '中文'}
-            onPress={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
-          />
         </View>
         <ScrollView
           horizontal

@@ -31,14 +31,12 @@ interface SitemapEntry {
 async function contentEntries(): Promise<MetadataRoute.Sitemap> {
   const out: MetadataRoute.Sitemap = [];
   const push = (path: string, modified?: string) => {
-    for (const locale of ['zh', 'en']) {
-      out.push({
-        url: `${siteUrl()}/${locale}${path}`,
-        lastModified: modified,
-        changeFrequency: 'daily',
-        priority: 0.6,
-      });
-    }
+    out.push({
+      url: `${siteUrl()}/zh${path}`,
+      lastModified: modified,
+      changeFrequency: 'daily',
+      priority: 0.6,
+    });
   };
   try {
     const [listings, articles, businesses, events] = await Promise.all([
@@ -62,20 +60,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
   for (const path of STATIC_PATHS) {
-    for (const locale of ['zh', 'en']) {
-      entries.push({
-        url: `${siteUrl()}/${locale}${path}`,
-        lastModified: now,
-        changeFrequency: 'hourly',
-        priority: path === '' ? 1 : 0.8,
-        alternates: {
-          languages: {
-            'zh-CN': `${siteUrl()}/zh${path}`,
-            'en-AU': `${siteUrl()}/en${path}`,
-          },
-        },
-      });
-    }
+    entries.push({
+      url: `${siteUrl()}/zh${path}`,
+      lastModified: now,
+      changeFrequency: 'hourly',
+      priority: path === '' ? 1 : 0.8,
+    });
   }
   return [...entries, ...(await contentEntries())];
 }
