@@ -135,3 +135,5 @@ API 启动和每分钟清理过期信息，避免重叠执行并记录重试错�
 - **域名**：`aucn.info`（主站）+ `api.aucn.info`（API）上线，TLS 已签；`www` 301 到 apex；旧 `sundata.tech` 域名 DNS 已下线（nginx 留 301/308 兜底）；`CORS_ORIGINS`/`WEBAUTHN_RP_ID`/`NEXT_PUBLIC_SITE_URL`/`API_PUBLIC_URL` 全部切换。Passkey 因 RP_ID 变更需重新注册；移动端打包需设 `EXPO_PUBLIC_API_URL=https://api.aucn.info`。
 - **站内详情页 + AI 导读**：`/pulse/[id]` 承接所有采集条目点击（AI 导读 `feed_items.brief`、价格/位置徽标、相关情报、原帖次要链接）；DeepSeek 经 Hive V3 OpenAI 兼容端点接入（`AI_BRIEF_*` env），每周日 18:00 生成租房/招工/二手行情周报发至 `/news`。
 - **行情提醒**：各版块统计条内嵌订阅（关键词+上限价+频率），复用 saved_search worker 匹配 `filters.target='feed'` 的新条目并站内通知。
+- **周末活动自动发布**：`importRows` 入库时经 `extractEventDate`（中文日期：本周六/X月X日/下周X晚上X点）、`extractCity`/`extractLocation` 提取日期/城市/区域，有日期且风控干净的线索自动 `published`；无日期保持 `pending`。区域下拉标签改为城市无关。
+- **种子数据（第九轮）**：businesses 15（六城真实华人商圈/超市/服务）、events 6（编辑部发布的集市/图书馆/社区活动）、weekend_events published 16（岩石区/帕丁顿/Glebe/Bondi/维妈/Camberwell 等真实周末集市，覆盖下两个周末）、社区种子帖 4。
