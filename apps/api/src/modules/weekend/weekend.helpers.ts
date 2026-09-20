@@ -135,9 +135,16 @@ export function weekendRange(now = new Date(), timeZone = 'Australia/Sydney') {
   const d = new Date(`${p.year}-${p.month}-${p.day}T00:00:00Z`);
   const day = d.getUTCDay();
   d.setUTCDate(d.getUTCDate() + (day === 0 ? -1 : 6 - day));
-  const from = localMidnight(d.toISOString().slice(0, 10), timeZone);
+  let from = localMidnight(d.toISOString().slice(0, 10), timeZone);
   d.setUTCDate(d.getUTCDate() + 2);
-  return { from, to: localMidnight(d.toISOString().slice(0, 10), timeZone) };
+  let to = localMidnight(d.toISOString().slice(0, 10), timeZone);
+  // Sunday afternoon onwards the weekend is over for planning purposes —
+  // show the upcoming weekend instead of an empty list.
+  if (now.getTime() > to.getTime() - 12 * 3600_000) {
+    from = new Date(from.getTime() + 7 * 86400_000);
+    to = new Date(to.getTime() + 7 * 86400_000);
+  }
+  return { from, to };
 }
 export function calendar(event: {
   id: string;

@@ -147,6 +147,12 @@ export function extractCity(text: string): string | null {
   return SUBURB_CITY.get(m[1]) ?? SUBURB_CITY.get(raw) ?? null;
 }
 
+/** Canonical English location names stored for a city, e.g. "Sydney" → ["Sydney","Eastwood",...]. */
+export function cityLocations(cityNameEn: string): string[] {
+  const subs = CITY_SUBURBS[cityNameEn] ?? [];
+  return [...new Set(subs.map((s) => CANONICAL[s] ?? s).filter((s) => /^[A-Za-z]/.test(s)))];
+}
+
 /** Local date/time parts in a timezone. */
 function tzParts(now: Date, timeZone: string) {
   const p = Object.fromEntries(

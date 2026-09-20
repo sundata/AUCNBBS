@@ -18,6 +18,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { AccessTokenPayload } from '../auth/auth.service';
 import { ZodPipe } from '../../common/zod.pipe';
 import { FEED_CATEGORIES, aiBrief, feedReviewInput, feedSourceInput } from './pulse.helpers';
+import { cityLocations } from '../../common/extract';
 
 function editor(u: AccessTokenPayload) {
   if (!['editor', 'admin', 'super_admin'].includes(u.role)) throw new ForbiddenException();
@@ -115,7 +116,19 @@ export class PulseController {
       status: 'published',
       ...(q.category ? { category: q.category } : {}),
       AND: [
-        ...(city ? [{ OR: [{ cityId: city.id }, { cityId: null }] }] : []),
+        ...(city
+          ? [
+              // Collected posts rarely carry cityId; the extracted `location`
+              // is the real signal. Include unlocated posts as national.
+              {
+                OR: [
+                  { cityId: city.id },
+                  { location: { in: cityLocations(city.nameEn) } },
+                  { AND: [{ cityId: null }, { location: null }] },
+                ],
+              },
+            ]
+          : []),
         ...(keywords.length
           ? [
               {
