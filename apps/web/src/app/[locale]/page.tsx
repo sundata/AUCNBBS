@@ -54,20 +54,12 @@ export default async function HomePage({
               {t('more')}
             </Link>
           </div>
-          <div
-            className={`grid grid-cols-2 gap-3 sm:gap-4 ${
-              feed.features.length >= 4
-                ? 'lg:grid-cols-4'
-                : feed.features.length === 3
-                  ? 'lg:grid-cols-3'
-                  : 'lg:grid-cols-2'
-            }`}
-          >
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
             {feed.features.map((a) => (
               <Link
                 key={a.id}
                 href={`/news/${a.slug}`}
-                className="group relative block overflow-hidden rounded-2xl aspect-[4/3]"
+                className="group relative block shrink-0 w-40 sm:w-48 overflow-hidden rounded-xl aspect-[16/10]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -77,11 +69,11 @@ export default async function HomePage({
                   className="absolute inset-0 w-full h-full object-cover transition duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                <span className="absolute left-2 top-2 rounded bg-black/55 px-2 py-0.5 text-[11px] text-white">
+                <span className="absolute left-2 top-2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
                   AI 画报
                 </span>
-                <div className="absolute inset-x-0 bottom-0 p-3">
-                  <h3 className="text-white font-semibold leading-snug line-clamp-2 text-sm sm:text-base drop-shadow">
+                <div className="absolute inset-x-0 bottom-0 p-2.5">
+                  <h3 className="text-white font-medium leading-snug line-clamp-2 text-xs sm:text-sm drop-shadow">
                     {a.title}
                   </h3>
                 </div>
