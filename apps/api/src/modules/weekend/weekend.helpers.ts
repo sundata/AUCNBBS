@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { z } from 'zod';
-import { decodeEntities } from '../pulse/pulse.helpers';
+import { decodeEntities } from '../../common/entities';
 
 export const publicUrl = z
   .string()

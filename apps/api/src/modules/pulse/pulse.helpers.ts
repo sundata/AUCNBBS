@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { z } from 'zod';
 import { publicUrl } from '../weekend/weekend.helpers';
+import { decodeEntities } from '../../common/entities';
 
 export const FEED_CATEGORIES = [
   'news',
@@ -109,23 +110,6 @@ export function fingerprint(url: string) {
   u.searchParams.sort();
   return createHash('sha256').update(u.href).digest('hex');
 }
-
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-};
-
-export const decodeEntities = (s: string) =>
-  s.replace(/&(#[xX]?[0-9a-fA-F]+|[a-zA-Z]+);/g, (m, e: string) => {
-    if (e.startsWith('#x') || e.startsWith('#X'))
-      return String.fromCodePoint(parseInt(e.slice(2), 16) || 0);
-    if (e.startsWith('#')) return String.fromCodePoint(parseInt(e.slice(1), 10) || 0);
-    return NAMED_ENTITIES[e] ?? m;
-  });
 
 const text = (s: unknown) =>
   typeof s === 'string' ? decodeEntities(s.replace(/<[^>]*>/g, '')).trim() : '';
