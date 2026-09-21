@@ -590,7 +590,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     if (!doc.title || !doc.body || doc.body.length < 200) return null;
     const illustrated = await this.illustrate(doc, slug, spec.hint);
     if (!illustrated) return null;
-    return { ...illustrated, source: 'AUCN AI 画报' };
+    return { ...illustrated, source: 'AUCN 精选画报' };
   }
 
   /**

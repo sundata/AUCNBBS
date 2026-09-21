@@ -70,7 +70,7 @@ export default async function HomePage({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                 <span className="absolute left-2 top-2 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
-                  AI 画报
+                  精选画报
                 </span>
                 <div className="absolute inset-x-0 bottom-0 p-2.5">
                   <h3 className="text-white font-medium leading-snug line-clamp-2 text-xs sm:text-sm drop-shadow">

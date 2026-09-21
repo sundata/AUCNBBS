@@ -39,7 +39,7 @@ export function articleCoverSvg(title: string, slug: string): string {
 <circle cx="1080" cy="80" r="240" fill="#ffffff" opacity="0.08"/>
 <circle cx="120" cy="580" r="300" fill="#ffffff" opacity="0.06"/>
 <circle cx="950" cy="520" r="140" fill="#000000" opacity="0.07"/>
-<text x="80" y="120" font-family="sans-serif" font-size="34" fill="#ffffff" opacity="0.85" letter-spacing="6">澳中生活圈 · AI 画报</text>
+<text x="80" y="120" font-family="sans-serif" font-size="34" fill="#ffffff" opacity="0.85" letter-spacing="6">澳中生活圈 · 精选画报</text>
 <text x="80" y="${titleY}" font-family="sans-serif" font-weight="700" font-size="76" fill="#ffffff">${esc(line1)}</text>
 ${line2 ? `<text x="80" y="${titleY + 96}" font-family="sans-serif" font-weight="700" font-size="76" fill="#ffffff">${esc(line2)}</text>` : ''}
 <rect x="80" y="560" width="180" height="4" fill="#ffffff" opacity="0.7"/>
