@@ -1,11 +1,12 @@
 /**
  * Backfill illustrated feature articles for past Sydney days.
- * Usage inside the api container: pnpm exec tsx scripts/backfill-features.ts [days]
+ * Usage inside the api container: node scripts/backfill-features.js [days]
  * Generates both daily feature slots for each of the last N days (skips existing).
+ * Runs the compiled dist/ code so Nest DI (decorator metadata) works correctly.
  */
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
-import { PulseService } from '../src/modules/pulse/pulse.service';
+const { NestFactory } = require('@nestjs/core');
+const { AppModule } = require('../dist/app.module');
+const { PulseService } = require('../dist/modules/pulse/pulse.service');
 
 const days = Number(process.argv[2] ?? 14);
 
@@ -24,10 +25,14 @@ async function main() {
       await pulse.maybeWriteFeature(now);
       process.stdout.write('done\n');
     } catch (e) {
-      process.stdout.write(`error: ${(e as Error).message}\n`);
+      process.stdout.write(`error: ${e.message}\n`);
     }
   }
   await app.close();
+  process.exit(0);
 }
 
-void main();
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
