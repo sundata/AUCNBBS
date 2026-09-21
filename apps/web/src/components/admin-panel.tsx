@@ -144,6 +144,7 @@ export function AdminPanel() {
   return (
     <section className="space-y-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold">{t('title')}</h1>
+      <Link href="/admin/daily" className="inline-block text-brand underline">每日图文接收箱 / Daily story inbox</Link>
       {error && (
         <p role="alert" className="text-red-700">
           {error}

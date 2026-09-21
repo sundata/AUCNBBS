@@ -1202,3 +1202,27 @@ model PushSubscription {
   @@index([userId])
   @@map("push_subscriptions")
 }
+
+// Atomic image + text deliveries from scheduled editorial jobs.
+model DailyNote {
+  id String @id @default(uuid()) @db.Uuid
+  deliveryId String @unique @map("delivery_id")
+  digest String
+  city String
+  edition String
+  title String
+  summary String
+  body String
+  tags String[]
+  sources Json
+  imageKind String @map("image_kind")
+  imageCredit String @map("image_credit")
+  imageAlt String @map("image_alt")
+  cover Bytes
+  status String @default("draft")
+  publishedAt DateTime? @map("published_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@index([status, city, edition])
+  @@map("daily_notes")
+}

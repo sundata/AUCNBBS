@@ -1,0 +1,14 @@
+{
+  "deliveryId": "melbourne-2026-09-20-example",
+  "city": "melbourne",
+  "edition": "2026-09-20",
+  "title": "图文传输格式示例（不是新闻）",
+  "summary": "这是接收接口的格式示例，接入时请替换为已核实的真实资讯。",
+  "body": "请填写适合网站阅读的纯文本正文，使用换行分段。不要包含内部引用标记、图片生成提示词或未核实的事实。此处只是格式示例，不应作为新闻发布。",
+  "tags": ["墨尔本生活"],
+  "sources": [{ "title": "请替换为真实查证来源", "url": "https://www.melbourne.vic.gov.au/" }],
+  "imageKind": "generated",
+  "imageCredit": "AI 生成示意图",
+  "imageAlt": "请填写实际封面内容的文字描述",
+  "coverFile": "./cover.png"
+}
