@@ -48,6 +48,12 @@ const FEATURE_TOPICS = [
   { topic: '留学生与新移民落地生活指南', hint: 'Sydney city street students' },
 ] as const;
 
+/** Two feature slots per Sydney day — morning and late afternoon, distinct topics. */
+const FEATURE_SLOTS = [
+  { suffix: 'a', at: 9 * 60 + 30, topicOffset: 0 },
+  { suffix: 'b', at: 16 * 60 + 30, topicOffset: 3 },
+] as const;
+
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private timer?: ReturnType<typeof setInterval>;
@@ -495,42 +501,49 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   /**
    * Daily illustrated feature — the LLM synthesises today's collected signals
    * into an original magazine piece. Cover is a real photo via Pexels when a
-   * key is configured, otherwise a generated branded SVG. One per Sydney day.
+   * key is configured, otherwise a generated branded SVG. Two slots per Sydney
+   * day (morning + late afternoon) on different rotated topics.
    */
   async maybeWriteFeature(now = new Date()) {
     const p = this.sydneyParts(now);
-    if (Number(p.hour) * 60 + Number(p.minute) < 9 * 60 + 30) return;
+    const minutes = Number(p.hour) * 60 + Number(p.minute);
     const day = `${p.year}-${p.month}-${p.day}`;
-    const slug = `feature-${day}-zh`;
-    const exists = await this.prisma.article.findUnique({
-      where: { slug },
-      select: { id: true },
-    });
-    if (exists) return;
-    const feature = await this.buildFeature(day, slug);
-    if (!feature) return;
-    await this.prisma.article.create({
-      data: {
-        slug,
-        authorId: await this.digestAuthorId(),
-        locale: 'zh',
-        category: 'ai_feature',
-        status: 'published',
-        publishedAt: now,
-        ...feature,
-      },
-    });
+    for (const slot of FEATURE_SLOTS) {
+      if (minutes < slot.at) continue;
+      const slug = `feature-${day}-${slot.suffix}-zh`;
+      const exists = await this.prisma.article.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      if (exists) continue;
+      const feature = await this.buildFeature(day, slug, slot.topicOffset);
+      if (!feature) continue;
+      await this.prisma.article.create({
+        data: {
+          slug,
+          authorId: await this.digestAuthorId(),
+          locale: 'zh',
+          category: 'ai_feature',
+          status: 'published',
+          publishedAt: now,
+          ...feature,
+        },
+      });
+    }
   }
 
   private async buildFeature(
     day: string,
     slug: string,
+    topicOffset = 0,
   ): Promise<{ title: string; summary: string; body: string; coverUrl: string; source: string } | null> {
     const dayIdx =
-      Math.floor(
+      (Math.floor(
         (Date.parse(`${day}T00:00:00Z`) - Date.parse(`${day.slice(0, 4)}-01-01T00:00:00Z`)) /
           86400000,
-      ) % FEATURE_TOPICS.length;
+      ) +
+        topicOffset) %
+      FEATURE_TOPICS.length;
     const spec = FEATURE_TOPICS[dayIdx];
     const [rate, weather, items, signals, cities] = await Promise.all([
       this.prisma.pulseMetric.findFirst({

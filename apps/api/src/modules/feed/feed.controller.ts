@@ -66,7 +66,7 @@ export class FeedController {
       this.prisma.article.findMany({
         where: { status: 'published', coverUrl: { not: null } },
         orderBy: { publishedAt: 'desc' },
-        take: 4,
+        take: 8,
         select: { id: true, slug: true, title: true, summary: true, coverUrl: true },
       }),
       this.prisma.post.findMany({
