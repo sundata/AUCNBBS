@@ -678,7 +678,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const cover = photos[0];
     const inline = photos[1];
     let body = doc.body.slice(0, 4000);
-    if (inline) body = body.replace(/\n+(?=## )/, `\n\n![配图](${inline.url})\n`);
+    if (inline) body = body.replace(/\n+(?=## )/, `\n\n![配图](${inline.url})\n\n`);
     const credits = [cover, inline]
       .filter((p): p is { url: string; credit: string } => !!p?.credit)
       .map((p) => p.credit);
