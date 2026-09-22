@@ -3,6 +3,9 @@ import { Link } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import type { DailyNote } from '@/components/daily-note-view';
 import { DailyCover } from '@/components/daily-cover';
+import { sectionMeta } from '@/lib/meta';
+
+export const generateMetadata = sectionMeta('meta.daily', '/daily');
 export default async function Page({
   params,
   searchParams,

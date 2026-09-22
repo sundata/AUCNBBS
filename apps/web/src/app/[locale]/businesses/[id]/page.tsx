@@ -9,6 +9,24 @@ import { ReviewsList } from '@/components/business-reviews';
 import { LeadForm, LeadsInbox } from '@/components/business-extras';
 import { MapLink } from '@/components/map-embed';
 import { serverToken } from '@/lib/server-auth';
+import { localeAlternates } from '@/lib/site';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const b = await api<BusinessDetail>(`/businesses/${id}`).catch(() => null);
+  if (!b) return {};
+  return {
+    title: b.nameZh,
+    description: b.descriptionZh?.slice(0, 140),
+    alternates: localeAlternates(`/businesses/${id}`),
+    openGraph: { title: b.nameZh, description: b.descriptionZh?.slice(0, 140) },
+  };
+}
 
 export default async function BusinessPage({
   params,

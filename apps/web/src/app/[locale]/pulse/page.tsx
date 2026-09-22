@@ -4,6 +4,9 @@ import { api, qs, type PulseFeedItem } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
+import { sectionMeta } from '@/lib/meta';
+
+export const generateMetadata = sectionMeta('meta.pulse', '/pulse');
 
 const CATS = [
   'news',

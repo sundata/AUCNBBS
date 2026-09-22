@@ -6,6 +6,9 @@ import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
 import { AdSlot } from '@/components/ad-slot';
 import { SaveSearchButton } from '@/components/save-search-button';
+import { sectionMeta } from '@/lib/meta';
+
+export const generateMetadata = sectionMeta('meta.search', '/search');
 
 const SCOPES = ['all', 'listings', 'posts', 'articles', 'businesses', 'events'] as const;
 type Scope = (typeof SCOPES)[number];

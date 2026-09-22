@@ -9,6 +9,25 @@ import { ReportButton } from '@/components/report-button';
 import { FavoriteButton } from '@/components/favorite-button';
 import { PollBox } from '@/components/poll-box';
 import { AcceptAnswer, PostTools } from '@/components/post-tools';
+import { localeAlternates } from '@/lib/site';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const p = await api<PostDetail>(`/community/posts/${id}`).catch(() => null);
+  if (!p) return {};
+  const desc = p.body?.slice(0, 140);
+  return {
+    title: p.title,
+    description: desc,
+    alternates: localeAlternates(`/community/posts/${id}`),
+    openGraph: { title: p.title, description: desc },
+  };
+}
 
 export default async function PostPage({
   params,

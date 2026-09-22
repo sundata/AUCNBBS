@@ -568,7 +568,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const cityName = new Map(cities.map((c) => [c.id, c.nameZh]));
     const r = (rate?.payload as { rates?: Record<string, number> } | undefined)?.rates ?? {};
     const context: string[] = [];
-    if (r.CNY) context.push(`今日汇率：1 AUD = ${r.CNY} CNY`);
+    const rateParts = (['CNY', 'JPY', 'USD'] as const)
+      .filter((c) => r[c])
+      .map((c) => `${r[c]} ${c}`);
+    if (rateParts.length) context.push(`今日汇率：1 AUD = ${rateParts.join('，')}`);
     for (const w of weather) {
       const p2 = w.payload as { temp?: number; code?: number };
       const name = w.cityId ? cityName.get(w.cityId) : null;
@@ -782,7 +785,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const rateLine = rate
       ? (() => {
           const r = (rate.payload as { rates?: Record<string, number> }).rates ?? {};
-          return r.CNY ? `1 AUD = ${r.CNY} CNY` : null;
+          const parts = (['CNY', 'JPY', 'USD'] as const)
+            .filter((c) => r[c])
+            .map((c) => `${r[c]} ${c}`);
+          return parts.length ? `1 AUD = ${parts.join('，')}` : null;
         })()
       : null;
     const lines: string[] = [];

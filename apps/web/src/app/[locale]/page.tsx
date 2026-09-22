@@ -3,6 +3,7 @@ import { Link } from '@/i18n/routing';
 import { api, qs, type HomeFeed } from '@/lib/api';
 import { cityName, formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
+import { siteUrl } from '@/lib/site';
 import { ListingCard } from '@/components/listing-card';
 import { AdSlot } from '@/components/ad-slot';
 import { PulseDashboard } from '@/components/pulse-dashboard';
@@ -24,9 +25,33 @@ export default async function HomePage({
   const tn = await getTranslations('news');
   const tc = await getTranslations('community');
   const citySuffix = city ? qs({ city: city.slug }) : '';
+  const base = siteUrl();
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        name: '澳中生活圈',
+        url: `${base}/zh`,
+        inLanguage: 'zh-CN',
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: { '@type': 'EntryPoint', urlTemplate: `${base}/zh/search?q={query}` },
+          'query-input': 'required name=query',
+        },
+      },
+      {
+        '@type': 'Organization',
+        name: '澳中生活圈',
+        url: base,
+        logo: `${base}/icon.png`,
+      },
+    ],
+  };
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       <Link
         href="/weekend"
         className="block rounded-2xl border border-line bg-white p-5 hover:border-brand"

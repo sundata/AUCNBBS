@@ -47,9 +47,16 @@ export async function PulseDashboard({ citySlug }: { citySlug?: string }) {
         {rates.CNY != null && (
           <div className="rounded-xl bg-surface px-4 py-3">
             <div className="text-xs text-muted">{t('rate')}</div>
-            <div className="mt-1 text-xl font-semibold text-navy">
-              1 AUD = {rates.CNY} <span className="text-sm font-normal">CNY</span>
-            </div>
+            <ul className="mt-1 space-y-0.5">
+              {(['CNY', 'JPY', 'USD'] as const)
+                .filter((c) => rates[c] != null)
+                .map((c) => (
+                  <li key={c} className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm text-muted">AUD → {c}</span>
+                    <span className="font-semibold text-navy">{rates[c]}</span>
+                  </li>
+                ))}
+            </ul>
           </div>
         )}
         {weather.slice(0, 1).map((w, i) => {

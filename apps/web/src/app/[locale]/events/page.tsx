@@ -4,6 +4,9 @@ import { Link } from '@/i18n/routing';
 import { api, qs, type EventSummary, type Page } from '@/lib/api';
 import { cityName, formatDateTime, formatMoney } from '@/lib/format';
 import { AutoIntel } from '@/components/auto-intel';
+import { sectionMeta } from '@/lib/meta';
+
+export const generateMetadata = sectionMeta('meta.events', '/events');
 
 export default async function EventsPage({
   params,

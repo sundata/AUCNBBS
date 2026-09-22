@@ -3,7 +3,7 @@ import {  getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { api, ApiError, type ArticleDetail } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import { localeAlternates } from '@/lib/site';
+import { localeAlternates, siteUrl } from '@/lib/site';
 import { ReportButton } from '@/components/report-button';
 import { FavoriteButton } from '@/components/favorite-button';
 import { ArticleBody } from '@/components/article-body';
@@ -29,7 +29,14 @@ export async function generateMetadata({
     title: a.title,
     description: a.summary,
     alternates: localeAlternates(`/news/${a.slug}`),
-    openGraph: { type: 'article', publishedTime: a.publishedAt ?? undefined },
+    openGraph: {
+      type: 'article',
+      publishedTime: a.publishedAt ?? undefined,
+      title: a.title,
+      description: a.summary,
+      images: a.coverUrl ? [{ url: a.coverUrl, alt: a.title }] : undefined,
+    },
+    twitter: { card: 'summary_large_image', title: a.title, description: a.summary },
   };
 }
 
@@ -48,8 +55,15 @@ export default async function ArticlePage({
     '@type': 'Article',
     headline: a.title,
     description: a.summary,
+    image: a.coverUrl ?? undefined,
     datePublished: a.publishedAt,
     author: { '@type': 'Person', name: a.author.displayName },
+    publisher: {
+      '@type': 'Organization',
+      name: '澳中生活圈',
+      logo: { '@type': 'ImageObject', url: `${siteUrl()}/icon.png` },
+    },
+    mainEntityOfPage: `${siteUrl()}/zh/news/${a.slug}`,
     inLanguage: 'zh-CN',
   };
   return (

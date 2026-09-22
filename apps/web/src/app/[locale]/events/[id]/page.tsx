@@ -7,6 +7,25 @@ import { CheckinForm, EventCancelButton, RsvpButton } from '@/components/event-p
 import { FavoriteButton } from '@/components/favorite-button';
 import { MapLink } from '@/components/map-embed';
 import { ReportButton } from '@/components/report-button';
+import { localeAlternates } from '@/lib/site';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const e = await api<EventDetail>(`/events/${id}`).catch(() => null);
+  if (!e) return {};
+  const desc = e.body?.slice(0, 140);
+  return {
+    title: e.title,
+    description: desc,
+    alternates: localeAlternates(`/events/${id}`),
+    openGraph: { title: e.title, description: desc },
+  };
+}
 
 export default async function EventPage({
   params,

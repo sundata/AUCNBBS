@@ -5,6 +5,9 @@ import { formatDate } from '@/lib/format';
 import { first, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
 import { AutoIntel } from '@/components/auto-intel';
+import { sectionMeta } from '@/lib/meta';
+
+export const generateMetadata = sectionMeta('meta.news', '/news');
 
 export default async function NewsPage({
   params,

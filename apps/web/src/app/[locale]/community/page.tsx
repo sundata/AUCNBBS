@@ -4,6 +4,9 @@ import { api, qs, type BoardDto, type Page, type PostSummary } from '@/lib/api';
 import { cityName, formatDate } from '@/lib/format';
 import { first, resolveCity, type SearchParams } from '@/lib/server';
 import { Empty } from '@/components/section';
+import { sectionMeta } from '@/lib/meta';
+
+export const generateMetadata = sectionMeta('meta.community', '/community');
 
 export default async function CommunityPage({
   params,

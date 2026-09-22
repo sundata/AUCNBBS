@@ -25,9 +25,22 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'site' });
   return {
     metadataBase: new URL(siteUrl()),
-    title: { default: t('name'), template: `%s · ${t('name')}` },
+    title: { default: `${t('name')}｜${t('tagline')}`, template: `%s · ${t('name')}` },
     description: t('tagline'),
-    openGraph: { siteName: t('name'), locale: 'zh_CN' },
+    keywords: t('keywords')
+      .split(',')
+      .map((k) => k.trim()),
+    alternates: { canonical: `${siteUrl()}/zh` },
+    openGraph: {
+      siteName: t('name'),
+      locale: 'zh_CN',
+      type: 'website',
+      url: `${siteUrl()}/zh`,
+      title: t('name'),
+      description: t('tagline'),
+    },
+    twitter: { card: 'summary_large_image', title: t('name'), description: t('tagline') },
+    robots: { index: true, follow: true },
   };
 }
 
