@@ -7,6 +7,7 @@ import { routing } from '@/i18n/routing';
 import { api, type CityDto } from '@/lib/api';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { PageViewTracker } from '@/components/pageview-tracker';
 import { siteUrl } from '@/lib/site';
 import '../globals.css';
 
@@ -64,6 +65,7 @@ export default async function LocaleLayout({
     <html lang="zh-CN">
       <body className="min-h-screen flex flex-col bg-surface">
         <NextIntlClientProvider>
+          <PageViewTracker />
           <SiteHeader cities={cities} />
           <main className="min-w-0 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
             {children}

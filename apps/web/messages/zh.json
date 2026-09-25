@@ -600,7 +600,20 @@
         "disabled": "停用",
         "never": "从未运行"
       }
-    }
+    },
+    "statsTitle": "访问与注册统计",
+    "pvToday": "今日访问 PV",
+    "pv7d": "7天 PV",
+    "pv30d": "30天 PV",
+    "uvToday": "今日访客",
+    "uv7d": "7天访客",
+    "onlineNow": "当前在线",
+    "usersToday": "今日新注册",
+    "users7d": "7天新注册",
+    "users30d": "30天新注册",
+    "usersTotal": "注册用户总数",
+    "topPaths": "热门页面（7天）",
+    "latestUsers": "最新注册用户"
   },
   "media": {
     "title": "图片",

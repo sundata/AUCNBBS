@@ -21,6 +21,7 @@ import { CommunityModule } from './modules/community/community.module';
 import { ContentModule } from './modules/content/content.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { HealthController } from './modules/health.controller';
+import { MetricsController } from './modules/metrics.controller';
 import { ListingsModule } from './modules/listings/listings.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { PrismaService } from './modules/prisma/prisma.service';
@@ -67,7 +68,7 @@ import { UsersModule } from './modules/users/users.module';
     PulseModule,
     DailyNotesModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, MetricsController],
   // THROTTLER_DISABLED is a test-system escape hatch; never set it in production.
   providers: process.env.THROTTLER_DISABLED
     ? []

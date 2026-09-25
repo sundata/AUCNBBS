@@ -57,6 +57,19 @@ interface ClaimDto {
   business: { id: string; nameZh: string; nameEn: string | null };
   claimant: { id: string; displayName: string };
 }
+interface AdminStats {
+  pageviews: { today: number; d7: number; d30: number; visitorsToday: number; visitors7d: number };
+  users: { total: number; today: number; d7: number; d30: number };
+  activeSessions: number;
+  topPaths: { path: string; count: number }[];
+  latestUsers: {
+    id: string;
+    displayName: string;
+    role: string;
+    createdAt: string;
+    lastLoginAt: string | null;
+  }[];
+}
 const blank = {
   slug: '',
   title: '',
@@ -87,6 +100,7 @@ export function AdminPanel() {
   const [form, setForm] = useState(blank);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [saved, setSaved] = useState(false);
   const review = !!me && ['moderator', 'admin', 'super_admin'].includes(me.role);
   const edit = !!me && ['editor', 'admin', 'super_admin'].includes(me.role);
@@ -129,15 +143,19 @@ export function AdminPanel() {
     });
     setClaims(page.items);
   }, []);
+  const loadStats = useCallback(async () => {
+    setStats(await api<AdminStats>('/admin/stats', { token: await getAccessToken() }));
+  }, []);
   useEffect(() => {
     if (review) {
       void loadReports().catch(fail);
       void loadQueue().catch(fail);
       void loadAppeals().catch(fail);
       void loadClaims().catch(fail);
+      void loadStats().catch(fail);
     }
     if (edit) void loadArticles().catch(fail);
-  }, [review, edit, loadReports, loadArticles, loadQueue, loadAppeals, loadClaims, fail]);
+  }, [review, edit, loadReports, loadArticles, loadQueue, loadAppeals, loadClaims, loadStats, fail]);
   if (loading) return <p>{t('loading')}</p>;
   if (!me) return <Link href="/login?next=/admin">{t('login')}</Link>;
   if (!review && !edit) return <p>{t('forbidden')}</p>;
@@ -151,6 +169,64 @@ export function AdminPanel() {
         </p>
       )}
       {saved && <p role="status">{t('saved')}</p>}
+      {review && stats && (
+        <section className="bg-white border rounded p-4 space-y-4">
+          <h2 className="font-bold">{t('statsTitle')}</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            {(
+              [
+                [t('pvToday'), stats.pageviews.today],
+                [t('pv7d'), stats.pageviews.d7],
+                [t('pv30d'), stats.pageviews.d30],
+                [t('onlineNow'), stats.activeSessions],
+                [t('uvToday'), stats.pageviews.visitorsToday],
+                [t('uv7d'), stats.pageviews.visitors7d],
+                [t('usersToday'), stats.users.today],
+                [t('usersTotal'), stats.users.total],
+              ] as const
+            ).map(([label, v]) => (
+              <div key={label} className="rounded-lg bg-surface px-2 py-3">
+                <div className="text-2xl font-semibold text-navy">{v}</div>
+                <div className="text-xs text-muted mt-1">{label}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted">
+            {t('users7d')}: {stats.users.d7} · {t('users30d')}: {stats.users.d30}
+          </p>
+          {stats.topPaths.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-navy mb-1">{t('topPaths')}</h3>
+              <ul className="text-sm space-y-0.5">
+                {stats.topPaths.map((p) => (
+                  <li key={p.path} className="flex justify-between gap-3">
+                    <span className="truncate">{p.path}</span>
+                    <span className="text-muted shrink-0">{p.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {stats.latestUsers.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-navy mb-1">{t('latestUsers')}</h3>
+              <ul className="text-sm space-y-0.5">
+                {stats.latestUsers.map((u) => (
+                  <li key={u.id} className="flex justify-between gap-3">
+                    <span className="truncate">
+                      {u.displayName}
+                      <span className="text-muted">（{u.role}）</span>
+                    </span>
+                    <span className="text-muted shrink-0">
+                      {new Date(u.createdAt).toLocaleDateString('zh-CN')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
       {review && (
         <section className="bg-white border rounded p-4 space-y-3">
           <h2 className="font-bold">{t('reports')}</h2>

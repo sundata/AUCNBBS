@@ -92,6 +92,77 @@ export const EDIT_ROLES = ['editor', 'admin', 'super_admin'];
 export class AdminController {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Traffic & growth snapshot for the admin dashboard. */
+  @Get('stats')
+  async stats(@CurrentUser() user: AccessTokenPayload) {
+    requireRole(user, ['admin', 'super_admin', 'moderator']);
+    const now = Date.now();
+    const dayStart = new Date(new Date().setHours(0, 0, 0, 0));
+    const d7 = new Date(now - 7 * 86400000);
+    const d30 = new Date(now - 30 * 86400000);
+    const activeSince = new Date(now - 15 * 60000);
+    const [
+      pvToday,
+      pv7d,
+      pv30d,
+      uvToday,
+      uv7d,
+      usersTotal,
+      usersToday,
+      users7d,
+      users30d,
+      activeSessions,
+      topPaths,
+      latestUsers,
+    ] = await Promise.all([
+      this.prisma.pageView.count({ where: { createdAt: { gte: dayStart } } }),
+      this.prisma.pageView.count({ where: { createdAt: { gte: d7 } } }),
+      this.prisma.pageView.count({ where: { createdAt: { gte: d30 } } }),
+      this.prisma.pageView.groupBy({
+        by: ['visitorKey'],
+        where: { createdAt: { gte: dayStart } },
+      }),
+      this.prisma.pageView.groupBy({ by: ['visitorKey'], where: { createdAt: { gte: d7 } } }),
+      this.prisma.user.count({ where: { status: 'active' } }),
+      this.prisma.user.count({ where: { createdAt: { gte: dayStart } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: d7 } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: d30 } } }),
+      this.prisma.session.count({
+        where: { revokedAt: null, expiresAt: { gt: new Date() }, lastSeenAt: { gte: activeSince } },
+      }),
+      this.prisma.pageView.groupBy({
+        by: ['path'],
+        where: { createdAt: { gte: d7 } },
+        _count: { path: true },
+        orderBy: { _count: { path: 'desc' } },
+        take: 10,
+      }),
+      this.prisma.user.findMany({
+        where: { status: 'active' },
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+        select: { id: true, displayName: true, role: true, createdAt: true, lastLoginAt: true },
+      }),
+    ]);
+    return {
+      pageviews: {
+        today: pvToday,
+        d7: pv7d,
+        d30: pv30d,
+        visitorsToday: uvToday.length,
+        visitors7d: uv7d.length,
+      },
+      users: { total: usersTotal, today: usersToday, d7: users7d, d30: users30d },
+      activeSessions,
+      topPaths: topPaths.map((t) => ({ path: t.path, count: t._count.path })),
+      latestUsers: latestUsers.map((u) => ({
+        ...u,
+        createdAt: u.createdAt.toISOString(),
+        lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+      })),
+    };
+  }
+
   @Get('reports')
   async reports(
     @CurrentUser() user: AccessTokenPayload,

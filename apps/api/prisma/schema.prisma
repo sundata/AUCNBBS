@@ -1226,3 +1226,15 @@ model DailyNote {
   @@index([status, city, edition])
   @@map("daily_notes")
 }
+
+model PageView {
+  id         BigInt   @id @default(autoincrement())
+  path       String   @db.VarChar(200)
+  referrer   String?  @db.VarChar(300)
+  visitorKey String   @map("visitor_key") @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([visitorKey, createdAt])
+  @@map("page_views")
+}
